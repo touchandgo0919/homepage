@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>我的导航</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f8fb;
+      --surface: #ffffff;
+      --surface-2: #f9fbff;
+      --text: #101828;
+      --muted: #667085;
+      --subtle: #98a2b3;
+      --border: #e4e9f2;
+      --accent: #2f6bff;
+      --accent-2: #16a3a3;
+      --accent-soft: #eaf1ff;
+      --shadow: 0 16px 42px rgba(15, 23, 42, 0.08);
+      --card-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+      --radius: 8px;
+      --sidebar-width: 236px;
+    }
+
+    [data-theme="dark"] {
+      color-scheme: dark;
+      --bg: #0f1724;
+      --surface: #151f2e;
+      --surface-2: #111a28;
+      --text: #edf2f7;
+      --muted: #aab6c5;
+      --subtle: #748196;
+      --border: #263446;
+      --accent: #75a1ff;
+      --accent-2: #42d1c8;
+      --accent-soft: rgba(117, 161, 255, 0.14);
+      --shadow: 0 18px 46px rgba(0, 0, 0, 0.32);
+      --card-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at top left, rgba(47, 107, 255, 0.12), transparent 32rem),
+        linear-gradient(180deg, var(--surface-2) 0%, var(--bg) 36rem);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      letter-spacing: 0;
+      transition: background 180ms ease, color 180ms ease;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      border-bottom: 1px solid var(--border);
+      background: color-mix(in srgb, var(--surface) 86%, transparent);
+      backdrop-filter: blur(18px);
+    }
+
+    .topbar-inner {
+      display: grid;
+      grid-template-columns: minmax(170px, 260px) minmax(260px, 720px) auto;
+      align-items: center;
+      gap: 24px;
+      max-width: 1480px;
+      margin: 0 auto;
+      padding: 14px 24px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .brand-mark {
+      display: grid;
+      width: 34px;
+      height: 34px;
+      place-items: center;
+      border-radius: var(--radius);
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: white;
+      font-weight: 800;
+      box-shadow: 0 12px 28px rgba(47, 107, 255, 0.28);
+    }
+
+    .brand-title {
+      display: block;
+      overflow: hidden;
+      font-size: 17px;
+      font-weight: 760;
+      line-height: 1.2;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .brand-subtitle {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.2;
+      margin-top: 2px;
+    }
+
+    .search {
+      position: relative;
+    }
+
+    .search svg {
+      position: absolute;
+      top: 50%;
+      left: 14px;
+      width: 18px;
+      height: 18px;
+      color: var(--subtle);
+      transform: translateY(-50%);
+      pointer-events: none;
+    }
+
+    .search input {
+      width: 100%;
+      height: 42px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      outline: 0;
+      padding: 0 44px;
+      background: var(--surface);
+      color: var(--text);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+      transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+    }
+
+    .search input:focus {
+      border-color: color-mix(in srgb, var(--accent) 74%, var(--border));
+      box-shadow: 0 0 0 4px var(--accent-soft);
+    }
+
+    .search-kbd {
+      position: absolute;
+      top: 50%;
+      right: 10px;
+      display: inline-flex;
+      align-items: center;
+      height: 24px;
+      padding: 0 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--subtle);
+      font-size: 12px;
+      transform: translateY(-50%);
+    }
+
+    .actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    .theme-toggle {
+      display: inline-grid;
+      grid-template-columns: 18px 40px 18px;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--muted);
+      cursor: pointer;
+      height: 38px;
+      padding: 0 10px;
+      transition: border-color 160ms ease, transform 160ms ease, background 160ms ease;
+    }
+
+    .theme-toggle:hover {
+      border-color: color-mix(in srgb, var(--accent) 54%, var(--border));
+      transform: translateY(-1px);
+    }
+
+    .theme-toggle svg {
+      width: 17px;
+      height: 17px;
+    }
+
+    .switch {
+      position: relative;
+      width: 40px;
+      height: 22px;
+      border-radius: 999px;
+      background: var(--accent);
+    }
+
+    .switch::after {
+      content: "";
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 2px 7px rgba(15, 23, 42, 0.26);
+      transition: transform 180ms ease;
+    }
+
+    [data-theme="dark"] .switch::after {
+      transform: translateX(18px);
+    }
+
+    .shell {
+      display: grid;
+      grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+      gap: 22px;
+      max-width: 1480px;
+      margin: 0 auto;
+      padding: 22px 24px 34px;
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 87px;
+      align-self: start;
+      min-height: calc(100vh - 112px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: color-mix(in srgb, var(--surface) 92%, transparent);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .sidebar-head {
+      padding: 18px 18px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .sidebar-title {
+      margin: 0;
+      font-size: 13px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .sidebar-total {
+      margin-top: 6px;
+      font-size: 24px;
+      line-height: 1;
+      font-weight: 800;
+    }
+
+    .category-nav {
+      display: grid;
+      gap: 4px;
+      padding: 12px;
+    }
+
+    .nav-link {
+      display: grid;
+      grid-template-columns: 30px 1fr auto;
+      align-items: center;
+      gap: 10px;
+      min-height: 40px;
+      border-radius: var(--radius);
+      padding: 5px 10px 5px 6px;
+      color: var(--muted);
+      transition: background 160ms ease, color 160ms ease;
+    }
+
+    .nav-link:hover,
+    .nav-link.active {
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+
+    .nav-icon {
+      display: grid;
+      width: 30px;
+      height: 30px;
+      place-items: center;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      background: var(--surface);
+      color: inherit;
+    }
+
+    .nav-icon svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .nav-name {
+      font-weight: 700;
+    }
+
+    .nav-count {
+      color: var(--subtle);
+      font-size: 12px;
+    }
+
+    .main {
+      min-width: 0;
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .stat {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--card-shadow);
+      padding: 15px 16px;
+    }
+
+    .stat-label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .stat-value {
+      margin-top: 4px;
+      font-size: 23px;
+      font-weight: 820;
+      line-height: 1.1;
+    }
+
+    .section {
+      scroll-margin-top: 96px;
+      margin-bottom: 16px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: color-mix(in srgb, var(--surface) 94%, transparent);
+      box-shadow: var(--card-shadow);
+      overflow: hidden;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      min-height: 54px;
+      padding: 13px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0;
+      font-size: 16px;
+      font-weight: 800;
+    }
+
+    .section-title .nav-icon {
+      color: var(--accent);
+    }
+
+    .section-count {
+      display: inline-flex;
+      align-items: center;
+      height: 22px;
+      border-radius: 999px;
+      padding: 0 9px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 760;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(142px, 1fr));
+      gap: 1px;
+      background: var(--border);
+      padding: 1px;
+    }
+
+    .card {
+      display: grid;
+      grid-template-columns: 42px minmax(0, 1fr);
+      align-items: center;
+      gap: 10px;
+      min-height: 76px;
+      background: var(--surface);
+      padding: 13px 14px;
+      transition: transform 160ms ease, background 160ms ease, box-shadow 160ms ease;
+    }
+
+    .card:hover {
+      position: relative;
+      z-index: 1;
+      background: color-mix(in srgb, var(--surface) 82%, var(--accent-soft));
+      box-shadow: 0 12px 30px rgba(47, 107, 255, 0.12);
+      transform: translateY(-2px);
+    }
+
+    .favicon {
+      display: grid;
+      width: 40px;
+      height: 40px;
+      place-items: center;
+      border-radius: 50%;
+      background: linear-gradient(135deg, hsl(var(--hue) 82% 55%), hsl(calc(var(--hue) + 22) 86% 68%));
+      color: #fff;
+      font-size: 15px;
+      font-weight: 820;
+      overflow: hidden;
+      text-transform: uppercase;
+    }
+
+    .favicon img {
+      grid-area: 1 / 1;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      background: #fff;
+    }
+
+    .favicon span {
+      grid-area: 1 / 1;
+    }
+
+    .card-title {
+      display: block;
+      overflow: hidden;
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 760;
+      line-height: 1.25;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .card-url {
+      display: block;
+      overflow: hidden;
+      margin-top: 4px;
+      color: var(--subtle);
+      font-size: 12px;
+      line-height: 1.2;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .empty {
+      display: none;
+      border: 1px dashed var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      padding: 58px 20px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .empty strong {
+      display: block;
+      color: var(--text);
+      font-size: 18px;
+      margin-bottom: 6px;
+    }
+
+    .footer {
+      max-width: 1480px;
+      margin: 0 auto;
+      padding: 0 24px 26px;
+      color: var(--subtle);
+      font-size: 12px;
+      text-align: right;
+    }
+
+    @media (max-width: 960px) {
+      .topbar-inner {
+        grid-template-columns: 1fr auto;
+      }
+
+      .search {
+        grid-column: 1 / -1;
+        grid-row: 2;
+      }
+
+      .shell {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        position: static;
+        min-height: 0;
+      }
+
+      .sidebar-head {
+        display: none;
+      }
+
+      .category-nav {
+        display: flex;
+        overflow-x: auto;
+        padding: 10px;
+      }
+
+      .nav-link {
+        grid-template-columns: 26px auto auto;
+        flex: 0 0 auto;
+      }
+
+      .summary {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .topbar-inner,
+      .shell,
+      .footer {
+        padding-left: 14px;
+        padding-right: 14px;
+      }
+
+      .brand-subtitle,
+      .search-kbd {
+        display: none;
+      }
+
+      .theme-toggle {
+        grid-template-columns: 40px;
+      }
+
+      .theme-toggle svg {
+        display: none;
+      }
+
+      .grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .card {
+        grid-template-columns: 1fr;
+        justify-items: center;
+        min-height: 108px;
+        text-align: center;
+      }
+
+      .card-title,
+      .card-url {
+        max-width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="#">
+        <span class="brand-mark">导</span>
+        <span>
+          <span class="brand-title">我的导航</span>
+          <span class="brand-subtitle">个人书签中心</span>
+        </span>
+      </a>
+
+      <label class="search" for="searchInput">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="7"></circle>
+          <path d="m20 20-3.5-3.5"></path>
+        </svg>
+        <input id="searchInput" type="search" autocomplete="off" placeholder="搜索书签、网站或关键词">
+        <span class="search-kbd">/</span>
+      </label>
+
+      <div class="actions">
+        <button class="theme-toggle" id="themeToggle" type="button" aria-label="切换深色浅色模式">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="4"></circle>
+            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path>
+          </svg>
+          <span class="switch" aria-hidden="true"></span>
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M21 14.6A8.6 8.6 0 0 1 9.4 3a8.9 8.9 0 1 0 11.6 11.6Z"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="sidebar-head">
+        <p class="sidebar-title">全部收藏</p>
+        <div class="sidebar-total" id="totalCount">0</div>
+      </div>
+      <nav class="category-nav" id="categoryNav" aria-label="收藏分类"></nav>
+    </aside>
+
+    <main class="main">
+      <div class="summary" aria-label="收藏概览">
+        <div class="stat">
+          <div class="stat-label">分类</div>
+          <div class="stat-value" id="categoryCount">0</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">书签</div>
+          <div class="stat-value" id="bookmarkCount">0</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">当前匹配</div>
+          <div class="stat-value" id="matchCount">0</div>
+        </div>
+      </div>
+
+      <div id="content"></div>
+      <div class="empty" id="emptyState">
+        <strong>没有找到匹配的收藏</strong>
+        换一个关键词试试。
+      </div>
+    </main>
+  </div>
+
+  <footer class="footer">Hosted on Cloudflare Pages</footer>
+
+  <script>
+    const siteData = [
+      {
+        category: "工作",
+        icon: "briefcase",
+        links: [
+          { title: "x", url: "https://twitter.com/?lang=zh" },
+          { title: "chatgpt", url: "https://chatgpt.com/" },
+          { title: "deepseek", url: "https://www.deepseek.com/" },
+          { title: "grok", url: "https://grok.com/" },
+          { title: "volcengine", url: "https://ai.volcengine.com/" },
+          { title: "jianying", url: "https://jimeng.jianying.com/" },
+          { title: "aliyun", url: "http://www.aliyun.com/" },
+          { title: "github", url: "https://github.com/" },
+          { title: "gitee", url: "https://gitee.com/" },
+          { title: "flova.ai", url: "https://www.flova.ai/" },
+          { title: "obsidian.md", url: "https://obsidian.md/" },
+          { title: "kiro.dev", url: "https://kiro.dev" },
+          { title: "youtube", url: "https://www.youtube.com/" },
+          { title: "weixin.qq", url: "https://mp.weixin.qq.com/" },
+          { title: "dify.ai", url: "https://dify.ai/" },
+          { title: "aws.amazon", url: "https://aws.amazon.com/cn/" },
+          { title: "worldrouter.ai", url: "https://www.worldrouter.ai/" },
+          { title: "feishu.cn", url: "https://open.feishu.cn/?lang=zh-CN" },
+          { title: "ipaddress.my", url: "https://ipaddress.my/" },
+          { title: "ip.skk", url: "https://ip.skk.moe/" }
+        ]
+      },
+      {
+        category: "学习",
+        icon: "book",
+        links: [
+          { title: "52pojie", url: "https://www.52pojie.cn/portal.php" },
+          { title: "考神资源网", url: "https://www.nishioka.com.cn/" },
+          { title: "scratchor", url: "https://tiku.scratchor.com/" },
+          { title: "appstorrent.ru", url: "https://appstorrent.ru/" },
+          { title: "macwk.cn", url: "https://macwk.cn/" },
+          { title: "cnblogs", url: "http://www.cnblogs.com/" },
+          { title: "csdn.net", url: "https://www.csdn.net/" },
+          { title: "51cto", url: "http://edu.51cto.com/" },
+          { title: "msdn.cn", url: "https://next.itellyou.cn/Original/" },
+          { title: "yage.ai", url: "https://yage.ai/share/" }
+        ]
+      },
+      {
+        category: "购物",
+        icon: "cart",
+        links: [
+          { title: "5sim.net", url: "https://5sim.net/zh" },
+          { title: "smspool.net", url: "https://www.smspool.net/" },
+          { title: "shadowsocks.nz", url: "https://portal.shadowsocks.nz/" },
+          { title: "pockyt.io", url: "https://shop.pockyt.io/pc/home" },
+          { title: "binance", url: "https://www.binance.com/zh-CN" },
+          { title: "jd", url: "http://www.jd.com/" },
+          { title: "apple.cn", url: "http://www.apple.com.cn/" },
+          { title: "taobao", url: "http://www.taobao.com/" },
+          { title: "tmall", url: "http://www.tmall.com/" },
+          { title: "ctrip", url: "https://www.ctrip.com/" },
+          { title: "12306.cn", url: "https://www.12306.cn/index/" },
+          { title: "paypal", url: "http://www.paypal.com/" },
+          { title: "ikea.cn", url: "https://www.ikea.cn/cn/zh/" },
+          { title: "chiphell", url: "http://www.chiphell.com/" },
+          { title: "qq-ex", url: "http://www.qq-ex.com/" },
+          { title: "amazon", url: "https://www.amazon.com/" }
+        ]
+      },
+      {
+        category: "娱乐",
+        icon: "smile",
+        links: [
+          { title: "bilibili", url: "https://www.bilibili.com/" },
+          { title: "douyin", url: "https://www.douyin.com/" },
+          { title: "weibo", url: "http://weibo.com/" },
+          { title: "nga.cn", url: "https://bbs.nga.cn/" },
+          { title: "qzone", url: "https://qzone.qq.com/" },
+          { title: "windy", url: "https://www.windy.com/" },
+          { title: "maprunner.info", url: "https://www.maprunner.info/" },
+          { title: "flightsim.to", url: "https://flightsim.to/" },
+          { title: "simbrief", url: "https://www.simbrief.com/home/" },
+          { title: "navigraph", url: "https://navigraph.com/" },
+          { title: "simmarket", url: "https://secure.simmarket.com/default-zh.html" },
+          { title: "fsprojects.eu", url: "https://www.fsprojects.eu/" },
+          { title: "wingflexsim", url: "https://wingflexsim.com/" },
+          { title: "cat3design", url: "https://cat3design.com/" },
+          { title: "throttletek", url: "https://throttletek.com/" },
+          { title: "minicockpit", url: "https://www.minicockpit.com/" },
+          { title: "fenixsim", url: "https://fenixsim.com/" },
+          { title: "vatsim.net", url: "https://my.vatsim.net/home" },
+          { title: "adsbexchange", url: "https://globe.adsbexchange.com/" },
+          { title: "flightradar24", url: "https://www.flightradar24.com/" },
+          { title: "fsdreamteam", url: "http://www.fsdreamteam.com/" },
+          { title: "rexsimulations", url: "https://www.rexsimulations.com" },
+          { title: "inibuilds", url: "https://store.inibuilds.com/" },
+          { title: "quickmadesim", url: "https://www.quickmadesim.com/" },
+          { title: "justflight", url: "https://www.justflight.com/" },
+          { title: "x-plane", url: "https://forums.x-plane.org/" },
+          { title: "msfs.forums", url: "https://forums.flightsimulator.com/" },
+          { title: "jetphotos", url: "https://www.jetphotos.com/" },
+          { title: "airliners.net", url: "http://www.airliners.net/" },
+          { title: "sinofsx", url: "http://bbs.sinofsx.com/index.php" },
+          { title: "twitch.tv", url: "https://www.twitch.tv/directory/category/world-of-warcraft" },
+          { title: "wago.io", url: "https://wago.io/" },
+          { title: "wowhead", url: "https://www.wowhead.com/wow/retail" },
+          { title: "raider.io", url: "https://raider.io/cn/" },
+          { title: "steampowered", url: "http://store.steampowered.com" },
+          { title: "g-portal", url: "https://www.g-portal.com/" },
+          { title: "playstation", url: "https://asia.playstation.com/cht-hk/psn/playstation-plus/" },
+          { title: "worldoftrucks", url: "https://www.worldoftrucks.com/en/" },
+          { title: "prismray.io", url: "https://prismray.io/zh-CN" },
+          { title: "rainymood", url: "http://rainymood.com/" }
+        ]
+      },
+      {
+        category: "理财",
+        icon: "money",
+        links: [
+          { title: "北京摇号", url: "https://xkczb.jtw.beijing.gov.cn/" },
+          { title: "北京公积金", url: "https://gjj.beijing.gov.cn/" },
+          { title: "工商银行", url: "http://www.icbc.com.cn/" },
+          { title: "中国建设银行", url: "http://www.ccb.com/" },
+          { title: "建行信用卡", url: "http://creditcard.ccb.com/" },
+          { title: "交通银行", url: "http://www.95559.com.cn/" },
+          { title: "交通银行信用卡中心", url: "http://creditcard.bankcomm.com/" }
+        ]
+      },
+      {
+        category: "路由",
+        icon: "router",
+        links: [
+          { title: "ifdian.net", url: "https://ifdian.net/" },
+          { title: "koolcenter", url: "https://www.koolcenter.com/" },
+          { title: "speedtest.net", url: "http://www.speedtest.net/" },
+          { title: "RT-AX89X", url: "https://touchandgo0919.ddnsto.com/Main_Login.asp" },
+          { title: "R8000", url: "https://vinsanity0919.ddnsto.com/Main_Login.asp" },
+          { title: "R7000", url: "https://zhaotao0919.ddnsto.com/Main_Login.asp" },
+          { title: "RT-AX86U", url: "https://xingyue0930.ddnsto.com/Main_Login.asp" },
+          { title: "公司路由", url: "https://beagle0919.ddnsto.com/Main_Login.asp" },
+          { title: "内网路由", url: "http://192.168.2.1/" },
+          { title: "北京宽带网", url: "http://www.bbn.com.cn/" }
+        ]
+      }
+    ];
+
+    const icons = {
+      briefcase: '<path d="M9 6V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1"></path><path d="M3 9a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"></path><path d="M3 13h18"></path><path d="M10 13v2h4v-2"></path>',
+      book: '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5Z"></path>',
+      cart: '<circle cx="9" cy="20" r="1.6"></circle><circle cx="18" cy="20" r="1.6"></circle><path d="M3 4h2l2.3 11.2a2 2 0 0 0 2 1.6h7.9a2 2 0 0 0 2-1.6L20.5 8H6.2"></path>',
+      smile: '<circle cx="12" cy="12" r="9"></circle><path d="M8.5 10h.01M15.5 10h.01M8 14a5 5 0 0 0 8 0"></path>',
+      money: '<path d="M12 2v20"></path><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7H14a3.5 3.5 0 0 1 0 7H6"></path>',
+      router: '<rect x="4" y="12" width="16" height="8" rx="2"></rect><path d="M7 16h.01M11 16h.01M15 16h2"></path><path d="M8 8a6 6 0 0 1 8 0"></path><path d="M5 5a10 10 0 0 1 14 0"></path>'
+    };
+
+    const content = document.getElementById("content");
+    const nav = document.getElementById("categoryNav");
+    const searchInput = document.getElementById("searchInput");
+    const emptyState = document.getElementById("emptyState");
+    const totalLinks = siteData.reduce((sum, item) => sum + item.links.length, 0);
+    const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const savedTheme = localStorage.getItem("nav-theme");
+
+    function svgIcon(name) {
+      return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name] || icons.book}</svg>`;
+    }
+
+    function getDomain(url) {
+      try {
+        return new URL(url).hostname.replace(/^www\./, "");
+      } catch {
+        return url.replace(/^https?:\/\//, "").split("/")[0];
+      }
+    }
+
+    function getInitial(title) {
+      const normalized = title.trim();
+      return normalized ? normalized.slice(0, 2) : "?";
+    }
+
+    function hashHue(text) {
+      let hash = 0;
+      for (const char of text) {
+        hash = (hash * 31 + char.charCodeAt(0)) % 360;
+      }
+      return hash;
+    }
+
+    function normalize(text) {
+      return text.toLowerCase().trim();
+    }
+
+    function render(filterText = "") {
+      const keyword = normalize(filterText);
+      let matches = 0;
+
+      content.innerHTML = "";
+      nav.innerHTML = "";
+
+      siteData.forEach((group, index) => {
+        const filteredLinks = group.links.filter((link) => {
+          const haystack = `${link.title} ${link.url} ${getDomain(link.url)} ${group.category}`;
+          return normalize(haystack).includes(keyword);
+        });
+
+        if (!filteredLinks.length) {
+          return;
+        }
+
+        matches += filteredLinks.length;
+        const sectionId = `category-${index}`;
+
+        const navLink = document.createElement("a");
+        navLink.className = "nav-link";
+        navLink.href = `#${sectionId}`;
+        navLink.innerHTML = `
+          <span class="nav-icon">${svgIcon(group.icon)}</span>
+          <span class="nav-name">${group.category}</span>
+          <span class="nav-count">${filteredLinks.length}</span>
+        `;
+        nav.appendChild(navLink);
+
+        const section = document.createElement("section");
+        section.className = "section";
+        section.id = sectionId;
+        section.innerHTML = `
+          <div class="section-head">
+            <h2 class="section-title">
+              <span class="nav-icon">${svgIcon(group.icon)}</span>
+              ${group.category}
+            </h2>
+            <span class="section-count">${filteredLinks.length}</span>
+          </div>
+          <div class="grid"></div>
+        `;
+
+        const grid = section.querySelector(".grid");
+        filteredLinks.forEach((link) => {
+          const card = document.createElement("a");
+          const domain = getDomain(link.url);
+          card.className = "card";
+          card.href = link.url;
+          card.target = "_blank";
+          card.rel = "noopener noreferrer";
+          card.title = `${link.title} - ${link.url}`;
+          card.style.setProperty("--hue", hashHue(domain));
+          card.innerHTML = `
+            <span class="favicon" aria-hidden="true">
+              <span>${getInitial(link.title)}</span>
+            </span>
+            <span class="card-copy">
+              <span class="card-title">${link.title}</span>
+              <span class="card-url">${domain}</span>
+            </span>
+          `;
+          grid.appendChild(card);
+        });
+
+        content.appendChild(section);
+      });
+
+      document.getElementById("matchCount").textContent = matches;
+      emptyState.style.display = matches ? "none" : "block";
+      updateActiveNav();
+    }
+
+    function updateActiveNav() {
+      const links = [...document.querySelectorAll(".nav-link")];
+      const sections = links
+        .map((link) => document.querySelector(link.getAttribute("href")))
+        .filter(Boolean);
+      const current = sections.findLast((section) => section.getBoundingClientRect().top <= 130) || sections[0];
+
+      links.forEach((link) => {
+        link.classList.toggle("active", current && link.getAttribute("href") === `#${current.id}`);
+      });
+    }
+
+    function applyTheme(theme) {
+      document.documentElement.dataset.theme = theme;
+      localStorage.setItem("nav-theme", theme);
+    }
+
+    document.getElementById("totalCount").textContent = totalLinks;
+    document.getElementById("categoryCount").textContent = siteData.length;
+    document.getElementById("bookmarkCount").textContent = totalLinks;
+
+    applyTheme(savedTheme || (prefersDark ? "dark" : "light"));
+    render();
+
+    searchInput.addEventListener("input", (event) => render(event.target.value));
+    document.getElementById("themeToggle").addEventListener("click", () => {
+      const nextTheme = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+      applyTheme(nextTheme);
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "/" && document.activeElement !== searchInput) {
+        event.preventDefault();
+        searchInput.focus();
+      }
+    });
+    window.addEventListener("scroll", updateActiveNav, { passive: true });
+  </script>
+</body>
+</html>
