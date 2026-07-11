@@ -439,16 +439,26 @@
       text-transform: uppercase;
     }
 
+    .favicon.has-icon {
+      border: 1px solid var(--border);
+      background: #fff;
+    }
+
     .favicon img {
       grid-area: 1 / 1;
       width: 100%;
       height: 100%;
-      object-fit: cover;
+      object-fit: contain;
+      padding: 7px;
       background: #fff;
     }
 
     .favicon span {
       grid-area: 1 / 1;
+    }
+
+    .favicon.has-icon span {
+      display: none;
     }
 
     .card-title {
@@ -799,6 +809,78 @@
       router: '<rect x="4" y="12" width="16" height="8" rx="2"></rect><path d="M7 16h.01M11 16h.01M15 16h2"></path><path d="M8 8a6 6 0 0 1 8 0"></path><path d="M5 5a10 10 0 0 1 14 0"></path>'
     };
 
+    const iconManifest = {
+      "aliyun.com": "assets/icons/aliyun.com.ico",
+      "apple.com.cn": "assets/icons/apple.com.cn.ico",
+      "52pojie.cn": "assets/icons/52pojie.cn.ico",
+      "amazon.com": "assets/icons/amazon.com.ico",
+      "airliners.net": "assets/icons/airliners.net.ico",
+      "bbs.nga.cn": "assets/icons/bbs.nga.cn.ico",
+      "aws.amazon.com": "assets/icons/aws.amazon.com.ico",
+      "5sim.net": "assets/icons/5sim.net.ico",
+      "bilibili.com": "assets/icons/bilibili.com.ico",
+      "creditcard.bankcomm.com": "assets/icons/creditcard.bankcomm.com.ico",
+      "csdn.net": "assets/icons/csdn.net.ico",
+      "cnblogs.com": "assets/icons/cnblogs.com.ico",
+      "chiphell.com": "assets/icons/chiphell.com.ico",
+      "deepseek.com": "assets/icons/deepseek.com.ico",
+      "ctrip.com": "assets/icons/ctrip.com.ico",
+      "douyin.com": "assets/icons/douyin.com.ico",
+      "edu.51cto.com": "assets/icons/edu.51cto.com.ico",
+      "fenixsim.com": "assets/icons/fenixsim.com.ico",
+      "gitee.com": "assets/icons/gitee.com.ico",
+      "github.com": "assets/icons/github.com.ico",
+      "ifdian.net": "assets/icons/ifdian.net.ico",
+      "g-portal.com": "assets/icons/g-portal.com.ico",
+      "kiro.dev": "assets/icons/kiro.dev.ico",
+      "mp.weixin.qq.com": "assets/icons/mp.weixin.qq.com.ico",
+      "jetphotos.com": "assets/icons/jetphotos.com.ico",
+      "macwk.cn": "assets/icons/macwk.cn.png",
+      "ip.skk.moe": "assets/icons/ip.skk.moe.ico",
+      "navigraph.com": "assets/icons/navigraph.com.ico",
+      "next.itellyou.cn": "assets/icons/next.itellyou.cn.ico",
+      "maprunner.info": "assets/icons/maprunner.info.ico",
+      "obsidian.md": "assets/icons/obsidian.md.ico",
+      "nishioka.com.cn": "assets/icons/nishioka.com.cn.ico",
+      "portal.shadowsocks.nz": "assets/icons/portal.shadowsocks.nz.ico",
+      "qq-ex.com": "assets/icons/qq-ex.com.ico",
+      "prismray.io": "assets/icons/prismray.io.ico",
+      "qzone.qq.com": "assets/icons/qzone.qq.com.ico",
+      "raider.io": "assets/icons/raider.io.ico",
+      "rainymood.com": "assets/icons/rainymood.com.ico",
+      "secure.simmarket.com": "assets/icons/secure.simmarket.com.ico",
+      "taobao.com": "assets/icons/taobao.com.ico",
+      "store.steampowered.com": "assets/icons/store.steampowered.com.ico",
+      "speedtest.net": "assets/icons/speedtest.net.ico",
+      "simbrief.com": "assets/icons/simbrief.com.ico",
+      "smspool.net": "assets/icons/smspool.net.ico",
+      "tiku.scratchor.com": "assets/icons/tiku.scratchor.com.ico",
+      "tmall.com": "assets/icons/tmall.com.png",
+      "xkczb.jtw.beijing.gov.cn": "assets/icons/xkczb.jtw.beijing.gov.cn.ico",
+      "wago.io": "assets/icons/wago.io.ico",
+      "12306.cn": "assets/icons/12306.cn.png",
+      "ai.volcengine.com": "assets/icons/ai.volcengine.com.png",
+      "ccb.com": "assets/icons/ccb.com.ico",
+      "creditcard.ccb.com": "assets/icons/creditcard.ccb.com.ico",
+      "dify.ai": "assets/icons/dify.ai.svg",
+      "cat3design.com": "assets/icons/cat3design.com.webp",
+      "forums.flightsimulator.com": "assets/icons/forums.flightsimulator.com.jpg",
+      "flova.ai": "assets/icons/flova.ai.ico",
+      "gjj.beijing.gov.cn": "assets/icons/gjj.beijing.gov.cn.ico",
+      "icbc.com.cn": "assets/icons/icbc.com.cn.ico",
+      "jd.com": "assets/icons/jd.com.ico",
+      "globe.adsbexchange.com": "assets/icons/globe.adsbexchange.com.png",
+      "jimeng.jianying.com": "assets/icons/jimeng.jianying.com.ico",
+      "koolcenter.com": "assets/icons/koolcenter.com.png",
+      "open.feishu.cn": "assets/icons/open.feishu.cn.svg",
+      "justflight.com": "assets/icons/justflight.com.png",
+      "ikea.cn": "assets/icons/ikea.cn.ico",
+      "minicockpit.com": "assets/icons/minicockpit.com.ico",
+      "rexsimulations.com": "assets/icons/rexsimulations.com.svg",
+      "throttletek.com": "assets/icons/throttletek.com.png",
+      "store.inibuilds.com": "assets/icons/store.inibuilds.com.png"
+    };
+
     const content = document.getElementById("content");
     const nav = document.getElementById("categoryNav");
     const searchInput = document.getElementById("searchInput");
@@ -830,6 +912,51 @@
         hash = (hash * 31 + char.charCodeAt(0)) % 360;
       }
       return hash;
+    }
+
+    function iconSources(domain) {
+      const sources = [];
+      if (iconManifest[domain]) {
+        sources.push(iconManifest[domain]);
+      }
+      sources.push(
+        `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`,
+        `https://icons.duckduckgo.com/ip3/${domain}.ico`
+      );
+      return sources;
+    }
+
+    function renderFavicon(title, domain) {
+      const sources = iconSources(domain);
+      const encodedSources = encodeURIComponent(JSON.stringify(sources));
+      return `
+        <span class="favicon" aria-hidden="true">
+          <img src="${sources[0]}" alt="" loading="lazy" data-sources="${encodedSources}" data-source-index="0">
+          <span>${getInitial(title)}</span>
+        </span>
+      `;
+    }
+
+    function bindIconFallbacks(root) {
+      root.querySelectorAll(".favicon img").forEach((img) => {
+        const setLoaded = () => img.parentElement.classList.add("has-icon");
+        const tryNext = () => {
+          const sources = JSON.parse(decodeURIComponent(img.dataset.sources || "%5B%5D"));
+          const nextIndex = Number(img.dataset.sourceIndex || 0) + 1;
+          if (sources[nextIndex]) {
+            img.dataset.sourceIndex = String(nextIndex);
+            img.src = sources[nextIndex];
+          } else {
+            img.remove();
+          }
+        };
+
+        img.addEventListener("load", setLoaded);
+        img.addEventListener("error", tryNext);
+        if (img.complete && img.naturalWidth > 0) {
+          setLoaded();
+        }
+      });
     }
 
     function normalize(text) {
@@ -891,14 +1018,13 @@
           card.title = `${link.title} - ${link.url}`;
           card.style.setProperty("--hue", hashHue(domain));
           card.innerHTML = `
-            <span class="favicon" aria-hidden="true">
-              <span>${getInitial(link.title)}</span>
-            </span>
+            ${renderFavicon(link.title, domain)}
             <span class="card-copy">
               <span class="card-title">${link.title}</span>
               <span class="card-url">${domain}</span>
             </span>
           `;
+          bindIconFallbacks(card);
           grid.appendChild(card);
         });
 
