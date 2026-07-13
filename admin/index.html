@@ -162,6 +162,7 @@
     .span-12 { grid-column: span 12; }
 
     .empty { padding: 44px 18px; color: var(--muted); text-align: center; }
+    .empty strong { display: block; margin-bottom: 6px; color: var(--text); font-size: 16px; }
     .status { min-width: 180px; color: var(--muted); font-size: 12px; text-align: right; }
     .status.ok { color: var(--ok); }
     .status.bad { color: var(--danger); }
@@ -188,6 +189,7 @@
     <div class="toolbar">
       <input id="tokenInput" class="btn" type="password" placeholder="输入 token">
       <button id="loginBtn" class="btn primary" type="button">登录</button>
+      <button id="logoutBtn" class="btn ghost" type="button">重新登录</button>
       <span id="status" class="status">等待加载</span>
     </div>
   </header>
@@ -225,6 +227,12 @@
         </form>
         <div id="tenantList" class="list"></div>
       </section>
+      <section id="permissionEmpty" class="panel">
+        <div class="empty">
+          <strong>请使用平台管理员 token 登录</strong>
+          当前账号不能管理租户。点击右上角“重新登录”后输入平台管理员 token。
+        </div>
+      </section>
     </div>
   </section>
 
@@ -232,6 +240,7 @@
     const state = { tenants: [], role: "", tenant: null };
     const tokenInput = document.getElementById("tokenInput");
     const loginBtn = document.getElementById("loginBtn");
+    const logoutBtn = document.getElementById("logoutBtn");
     const statusEl = document.getElementById("status");
     const tenantForm = document.getElementById("tenantForm");
 
@@ -325,10 +334,11 @@
       const loggedIn = Boolean(state.role);
       tokenInput.style.display = loggedIn ? "none" : "";
       loginBtn.style.display = loggedIn ? "none" : "";
+      logoutBtn.style.display = loggedIn ? "" : "none";
     }
 
     function canUseSettings() {
-      return ["platform", "admin"].includes(state.role);
+      return Boolean(state.role);
     }
 
     function renderTabs() {
@@ -347,7 +357,9 @@
 
     function renderTenantAdmin() {
       const panel = document.getElementById("tenantAdmin");
+      const emptyPanel = document.getElementById("permissionEmpty");
       panel.style.display = state.role === "platform" ? "" : "none";
+      emptyPanel.style.display = state.role && state.role !== "platform" ? "" : "none";
       if (state.role !== "platform") return;
 
       document.getElementById("tenantCount").textContent = `${state.tenants.length} 个租户`;
@@ -407,6 +419,10 @@
     });
 
     loginBtn.addEventListener("click", () => login().catch((error) => setStatus(error.message, "bad")));
+    logoutBtn.addEventListener("click", async () => {
+      await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" });
+      window.location.href = "/admin/";
+    });
     document.getElementById("generateTenantTokenBtn").addEventListener("click", () => {
       tenantForm.elements.admin_token.value = randomToken();
     });
