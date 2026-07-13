@@ -300,10 +300,7 @@
           <label class="field span-4"><span>名称</span><input name="name" required placeholder="zhaotao"></label>
           <label class="field span-4">
             <span>令牌</span>
-            <span class="input-action">
-              <input name="admin_token" placeholder="编辑时留空则不修改">
-              <button id="generateTenantTokenBtn" class="btn" type="button">随机</button>
-            </span>
+            <input name="admin_token" placeholder="编辑时留空则不修改">
           </label>
           <label class="field span-4">
             <span>角色</span>
@@ -568,9 +565,6 @@
       await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" });
       localStorage.removeItem("nav-visible-token");
       window.location.href = "/admin/";
-    });
-    document.getElementById("generateTenantTokenBtn").addEventListener("click", () => {
-      tenantForm.elements.admin_token.value = randomToken();
     });
     document.getElementById("resetTenantBtn").addEventListener("click", resetTenantForm);
     document.getElementById("themeToggle").addEventListener("click", () => {
