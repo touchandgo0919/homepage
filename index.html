@@ -526,34 +526,6 @@
       min-width: 0;
     }
 
-    .summary {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 12px;
-      margin-bottom: 16px;
-    }
-
-    .stat {
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      background: var(--surface);
-      box-shadow: var(--card-shadow);
-      padding: 15px 16px;
-    }
-
-    .stat-label {
-      color: var(--muted);
-      font-size: 12px;
-      font-weight: 700;
-    }
-
-    .stat-value {
-      margin-top: 4px;
-      font-size: 23px;
-      font-weight: 820;
-      line-height: 1.1;
-    }
-
     .section {
       scroll-margin-top: 122px;
       margin-bottom: 16px;
@@ -1003,10 +975,6 @@
         flex: 0 0 auto;
       }
 
-      .summary {
-        grid-template-columns: 1fr;
-      }
-
       .edit-panel {
         grid-template-columns: 1fr;
       }
@@ -1124,21 +1092,6 @@
     </aside>
 
     <main class="main">
-      <div class="summary" aria-label="收藏概览">
-        <div class="stat">
-          <div class="stat-label">分类</div>
-          <div class="stat-value" id="categoryCount">0</div>
-        </div>
-        <div class="stat">
-          <div class="stat-label">书签</div>
-          <div class="stat-value" id="bookmarkCount">0</div>
-        </div>
-        <div class="stat">
-          <div class="stat-label">当前匹配</div>
-          <div class="stat-value" id="matchCount">0</div>
-        </div>
-      </div>
-
       <div class="edit-hint">编辑模式已开启：拖动左侧分组可调整顺序，拖动书签图块可在同组或跨组移动。</div>
 
       <div id="content"></div>
@@ -1781,7 +1734,6 @@
 
       nav.appendChild(navFragment);
       content.appendChild(contentFragment);
-      document.getElementById("matchCount").textContent = matches;
       emptyState.style.display = matches ? "none" : "block";
       updateActiveNav();
       updateAuthUi();
@@ -1807,8 +1759,6 @@
     function updateSummary() {
       const totalLinks = siteData.reduce((sum, item) => sum + item.links.length, 0);
       document.getElementById("totalCount").textContent = totalLinks;
-      document.getElementById("categoryCount").textContent = siteData.length;
-      document.getElementById("bookmarkCount").textContent = totalLinks;
     }
 
     function findCategory(categoryId) {
