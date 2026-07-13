@@ -119,11 +119,10 @@ async function getNav(db, slug) {
     .all();
   const { results: bookmarks } = await db
     .prepare(
-      `SELECT bookmarks.id, bookmarks.category_id, bookmarks.title, bookmarks.url, bookmarks.sort_order
+      `SELECT id, tenant_id, category_id, title, url, sort_order
        FROM bookmarks
-       JOIN categories ON categories.id = bookmarks.category_id
-       WHERE categories.tenant_id = ?
-       ORDER BY bookmarks.category_id, bookmarks.sort_order, bookmarks.id`
+       WHERE tenant_id = ?
+       ORDER BY category_id, sort_order, id`
     )
     .bind(tenant.id)
     .all();
@@ -139,6 +138,7 @@ async function getNav(db, slug) {
         .filter((bookmark) => bookmark.category_id === category.id)
         .map((bookmark) => ({
           id: bookmark.id,
+          tenant_id: bookmark.tenant_id,
           category_id: bookmark.category_id,
           title: bookmark.title,
           url: bookmark.url,
@@ -222,8 +222,8 @@ async function createBookmark(db, tenantId, body) {
 
   const sortOrder = Number.isInteger(body.sort_order) ? body.sort_order : Date.now();
   const result = await db
-    .prepare("INSERT INTO bookmarks (category_id, title, url, sort_order) VALUES (?, ?, ?, ?)")
-    .bind(categoryId, title, url, sortOrder)
+    .prepare("INSERT INTO bookmarks (tenant_id, category_id, title, url, sort_order) VALUES (?, ?, ?, ?, ?)")
+    .bind(tenantId, categoryId, title, url, sortOrder)
     .run();
   return { id: result.meta.last_row_id };
 }
@@ -243,12 +243,10 @@ async function updateBookmark(db, tenantId, id, body) {
   await db
     .prepare(
       `UPDATE bookmarks
-       SET category_id = ?, title = ?, url = ?, updated_at = CURRENT_TIMESTAMP
-       WHERE id = ? AND EXISTS (
-         SELECT 1 FROM categories WHERE categories.id = bookmarks.category_id AND categories.tenant_id = ?
-       )`
+       SET tenant_id = ?, category_id = ?, title = ?, url = ?, updated_at = CURRENT_TIMESTAMP
+       WHERE id = ? AND tenant_id = ?`
     )
-    .bind(categoryId, title, url, id, tenantId)
+    .bind(tenantId, categoryId, title, url, id, tenantId)
     .run();
   return { id };
 }
@@ -273,12 +271,10 @@ async function reorder(db, tenantId, table, ids, categoryId) {
       return db
         .prepare(
           `UPDATE bookmarks
-           SET sort_order = ?, category_id = ?, updated_at = CURRENT_TIMESTAMP
-           WHERE id = ? AND EXISTS (
-             SELECT 1 FROM categories WHERE categories.id = bookmarks.category_id AND categories.tenant_id = ?
-           )`
+           SET sort_order = ?, tenant_id = ?, category_id = ?, updated_at = CURRENT_TIMESTAMP
+           WHERE id = ? AND tenant_id = ?`
         )
-        .bind(index, categoryId, Number(id), tenantId);
+        .bind(index, tenantId, categoryId, Number(id), tenantId);
     }
 
     return db
@@ -372,9 +368,7 @@ export async function onRequest(context) {
       await db
         .prepare(
           `DELETE FROM bookmarks
-           WHERE id = ? AND EXISTS (
-             SELECT 1 FROM categories WHERE categories.id = bookmarks.category_id AND categories.tenant_id = ?
-           )`
+           WHERE id = ? AND tenant_id = ?`
         )
         .bind(toId(parts[1]), tenantId)
         .run();
