@@ -58,41 +58,6 @@
     .btn.ghost { background: transparent; }
     .btn.icon { width: 36px; padding: 0; }
 
-    .layout {
-      display: grid;
-      grid-template-columns: 340px minmax(0, 1fr);
-      gap: 18px;
-      max-width: 1420px;
-      margin: 0 auto;
-      padding: 0 22px 28px;
-    }
-
-    .tabs {
-      display: none;
-      max-width: 1420px;
-      margin: 18px auto 0;
-      padding: 0 22px;
-      gap: 8px;
-    }
-
-    .tabs.active { display: flex; }
-
-    .tab-button {
-      min-height: 38px;
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      background: var(--surface);
-      color: var(--muted);
-      padding: 0 14px;
-      font-weight: 780;
-    }
-
-    .tab-button.active {
-      border-color: var(--accent);
-      background: var(--accent);
-      color: #fff;
-    }
-
     .tab-panel {
       display: none;
       max-width: 1420px;
@@ -190,8 +155,7 @@
     .status.bad { color: var(--danger); }
 
     @media (max-width: 900px) {
-      .layout { grid-template-columns: 1fr; padding-inline: 12px; }
-      .tabs, .tab-panel { padding-inline: 12px; }
+      .tab-panel { padding-inline: 12px; }
       .topbar { align-items: flex-start; flex-direction: column; padding-inline: 12px; }
       .toolbar { justify-content: flex-start; }
       .span-1, .span-2, .span-3, .span-4, .span-5, .span-6, .span-8 { grid-column: span 12; }
@@ -212,60 +176,7 @@
     </div>
   </header>
 
-  <nav id="tabs" class="tabs" aria-label="管理导航">
-    <button class="tab-button active" type="button" data-tab="bookmarks">书签管理</button>
-    <button class="tab-button" type="button" data-tab="settings">系统设置</button>
-  </nav>
-
-  <section id="bookmarksTab" class="tab-panel active">
-    <main class="layout">
-      <section class="panel">
-        <div class="panel-head">
-          <h2>分类</h2>
-          <span id="categoryCount" class="count">0</span>
-        </div>
-        <form id="categoryForm" class="form">
-          <input type="hidden" name="id">
-          <label class="field span-5"><span>名称</span><input name="name" required placeholder="工作"></label>
-          <label class="field span-4">
-            <span>图标</span>
-            <select name="icon">
-              <option value="briefcase">工作</option>
-              <option value="book">学习</option>
-              <option value="cart">购物</option>
-              <option value="smile">娱乐</option>
-              <option value="money">理财</option>
-              <option value="router">路由</option>
-            </select>
-          </label>
-          <button class="btn primary span-3" type="submit">保存</button>
-          <button id="resetCategoryBtn" class="btn ghost span-12" type="button">新建分类</button>
-        </form>
-        <div id="categoryList" class="list"></div>
-      </section>
-
-      <section class="panel">
-        <div class="panel-head">
-          <h2 id="bookmarkTitle">书签</h2>
-          <span id="bookmarkCount" class="count">0</span>
-        </div>
-        <form id="bookmarkForm" class="form">
-          <input type="hidden" name="id">
-          <label class="field span-3">
-            <span>分类</span>
-            <select name="category_id" required></select>
-          </label>
-          <label class="field span-3"><span>标题</span><input name="title" required placeholder="chatgpt"></label>
-          <label class="field span-4"><span>网址</span><input name="url" required placeholder="https://chatgpt.com/"></label>
-          <button class="btn primary span-2" type="submit">保存</button>
-          <button id="resetBookmarkBtn" class="btn ghost span-12" type="button">新建书签</button>
-        </form>
-        <div id="bookmarkList" class="list"></div>
-      </section>
-    </main>
-  </section>
-
-  <section id="settingsTab" class="tab-panel">
+  <section id="settingsTab" class="tab-panel active">
     <div class="settings-grid">
       <section id="tenantAdmin" class="panel">
         <div class="panel-head">
@@ -319,13 +230,11 @@
   </section>
 
   <script>
-    const state = { data: [], tenants: [], tokens: [], selectedCategoryId: null, dragging: null, role: "", tenant: null, activeTab: "bookmarks" };
+    const state = { tenants: [], tokens: [], role: "", tenant: null };
     const tokenInput = document.getElementById("tokenInput");
     const statusEl = document.getElementById("status");
     const tenantForm = document.getElementById("tenantForm");
     const accessTokenForm = document.getElementById("accessTokenForm");
-    const categoryForm = document.getElementById("categoryForm");
-    const bookmarkForm = document.getElementById("bookmarkForm");
 
     localStorage.removeItem("nav-admin-token");
 
@@ -372,12 +281,6 @@
 
     async function load() {
       setStatus("加载中");
-      const body = await api("nav");
-      state.tenant = body.tenant || null;
-      state.data = body.data || [];
-      if (!state.selectedCategoryId && state.data[0]) {
-        state.selectedCategoryId = state.data[0].id;
-      }
       if (state.role === "platform") {
         await loadTenants();
       }
@@ -397,7 +300,6 @@
       });
       state.role = body.role;
       state.tenant = body.tenant;
-      state.selectedCategoryId = null;
       await load();
       setStatus(body.role === "platform" ? "平台管理员已登录" : "租户已登录", "ok");
     }
@@ -407,7 +309,6 @@
       const body = await api("auth/session");
       state.role = body.role;
       state.tenant = body.tenant;
-      state.selectedCategoryId = null;
       await load();
       setStatus(body.role === "platform" ? "平台管理员已登录" : "租户已登录", "ok");
     }
@@ -422,61 +323,21 @@
       state.tokens = body.data || [];
     }
 
-    function selectedCategory() {
-      return state.data.find((category) => category.id === state.selectedCategoryId) || state.data[0];
-    }
-
-    function resetCategoryForm() {
-      categoryForm.reset();
-      categoryForm.elements.id.value = "";
-      categoryForm.elements.icon.value = "book";
-    }
-
-    function resetBookmarkForm() {
-      bookmarkForm.reset();
-      bookmarkForm.elements.id.value = "";
-      if (selectedCategory()) {
-        bookmarkForm.elements.category_id.value = selectedCategory().id;
-      }
-    }
-
     function render() {
       renderTabs();
       renderTenantAdmin();
       renderTokenAdmin();
-      renderCategoryList();
-      renderBookmarkFormOptions();
-      renderBookmarkList();
     }
 
     function canUseSettings() {
       return ["platform", "admin"].includes(state.role);
     }
 
-    function setActiveTab(tab) {
-      state.activeTab = tab === "settings" && canUseSettings() ? "settings" : "bookmarks";
-      renderTabs();
-    }
-
     function renderTabs() {
-      const tabs = document.getElementById("tabs");
-      const settingsButton = document.querySelector('[data-tab="settings"]');
-      const bookmarksPanel = document.getElementById("bookmarksTab");
       const settingsPanel = document.getElementById("settingsTab");
       const loggedIn = Boolean(state.role);
 
-      tabs.classList.toggle("active", loggedIn);
-      settingsButton.style.display = canUseSettings() ? "" : "none";
-
-      if (!canUseSettings() && state.activeTab === "settings") {
-        state.activeTab = "bookmarks";
-      }
-
-      document.querySelectorAll(".tab-button").forEach((button) => {
-        button.classList.toggle("active", button.dataset.tab === state.activeTab);
-      });
-      bookmarksPanel.classList.toggle("active", loggedIn && state.activeTab === "bookmarks");
-      settingsPanel.classList.toggle("active", loggedIn && state.activeTab === "settings" && canUseSettings());
+      settingsPanel.classList.toggle("active", loggedIn && canUseSettings());
     }
 
     function resetTenantForm() {
@@ -504,7 +365,6 @@
             <span class="sub">${escapeHtml(tenant.slug)}</span>
           </span>
           <span class="row-actions">
-            <button class="btn icon" type="button" data-action="open">→</button>
             <button class="btn icon" type="button" data-action="edit">✎</button>
             <button class="btn icon danger" type="button" data-action="delete">×</button>
           </span>
@@ -523,10 +383,6 @@
             await api(`tenants/${tenant.id}`, { method: "DELETE" });
             await load();
             return;
-          }
-          if (action === "open") {
-            state.selectedCategoryId = null;
-            await load();
           }
         });
         root.appendChild(row);
@@ -565,166 +421,6 @@
       });
     }
 
-    function renderCategoryList() {
-      document.getElementById("categoryCount").textContent = `${state.data.length} 个分类`;
-      const root = document.getElementById("categoryList");
-      root.innerHTML = "";
-      state.data.forEach((category) => {
-        const row = document.createElement("div");
-        row.className = `row ${category.id === state.selectedCategoryId ? "active" : ""}`;
-        row.draggable = true;
-        row.dataset.id = category.id;
-        row.innerHTML = `
-          <span class="handle">≡</span>
-          <span>
-            <span class="title">${escapeHtml(category.category)}</span>
-            <span class="sub">${escapeHtml(category.icon)} · ${category.links.length} 个书签</span>
-          </span>
-          <span class="row-actions">
-            <button class="btn icon" type="button" data-action="edit">✎</button>
-            <button class="btn icon danger" type="button" data-action="delete">×</button>
-          </span>
-        `;
-        row.addEventListener("click", (event) => {
-          const action = event.target.dataset.action;
-          if (action === "edit") {
-            categoryForm.elements.id.value = category.id;
-            categoryForm.elements.name.value = category.category;
-            categoryForm.elements.icon.value = category.icon;
-            return;
-          }
-          if (action === "delete") {
-            deleteCategory(category.id);
-            return;
-          }
-          state.selectedCategoryId = category.id;
-          resetBookmarkForm();
-          render();
-        });
-        bindDrag(row, "category");
-        root.appendChild(row);
-      });
-    }
-
-    function renderBookmarkFormOptions() {
-      const select = bookmarkForm.elements.category_id;
-      select.innerHTML = state.data.map((category) => `<option value="${category.id}">${escapeHtml(category.category)}</option>`).join("");
-      if (selectedCategory()) {
-        select.value = selectedCategory().id;
-      }
-    }
-
-    function renderBookmarkList() {
-      const category = selectedCategory();
-      const root = document.getElementById("bookmarkList");
-      const links = category ? category.links : [];
-      document.getElementById("bookmarkTitle").textContent = category ? `书签 · ${category.category}` : "书签";
-      document.getElementById("bookmarkCount").textContent = `${links.length} 个书签`;
-      root.innerHTML = "";
-
-      if (!links.length) {
-        root.innerHTML = '<div class="empty">当前分类还没有书签。</div>';
-        return;
-      }
-
-      links.forEach((bookmark) => {
-        const row = document.createElement("div");
-        row.className = "row";
-        row.draggable = true;
-        row.dataset.id = bookmark.id;
-        row.innerHTML = `
-          <span class="handle">≡</span>
-          <span>
-            <span class="title">${escapeHtml(bookmark.title)}</span>
-            <span class="sub">${escapeHtml(bookmark.url)}</span>
-          </span>
-          <span class="row-actions">
-            <button class="btn icon" type="button" data-action="edit">✎</button>
-            <button class="btn icon danger" type="button" data-action="delete">×</button>
-          </span>
-        `;
-        row.addEventListener("click", (event) => {
-          const action = event.target.dataset.action;
-          if (action === "edit") {
-            bookmarkForm.elements.id.value = bookmark.id;
-            bookmarkForm.elements.category_id.value = bookmark.category_id;
-            bookmarkForm.elements.title.value = bookmark.title;
-            bookmarkForm.elements.url.value = bookmark.url;
-          }
-          if (action === "delete") {
-            deleteBookmark(bookmark.id);
-          }
-        });
-        bindDrag(row, "bookmark");
-        root.appendChild(row);
-      });
-    }
-
-    function bindDrag(row, type) {
-      row.addEventListener("dragstart", () => {
-        state.dragging = { id: Number(row.dataset.id), type };
-        row.classList.add("dragging");
-      });
-      row.addEventListener("dragend", () => {
-        row.classList.remove("dragging");
-        state.dragging = null;
-      });
-      row.addEventListener("dragover", (event) => event.preventDefault());
-      row.addEventListener("drop", async (event) => {
-        event.preventDefault();
-        if (!state.dragging || state.dragging.type !== type) return;
-        const targetId = Number(row.dataset.id);
-        if (targetId === state.dragging.id) return;
-        await moveItem(type, state.dragging.id, targetId);
-      });
-    }
-
-    async function moveItem(type, sourceId, targetId) {
-      const list = type === "category" ? state.data : selectedCategory().links;
-      const from = list.findIndex((item) => item.id === sourceId);
-      const to = list.findIndex((item) => item.id === targetId);
-      if (from < 0 || to < 0) return;
-      const [item] = list.splice(from, 1);
-      list.splice(to, 0, item);
-      render();
-      const ids = list.map((item) => item.id);
-      if (type === "category") {
-        await api("reorder/categories", { method: "POST", body: JSON.stringify({ ids }) });
-      } else {
-        await api("reorder/bookmarks", {
-          method: "POST",
-          body: JSON.stringify({ category_id: selectedCategory().id, ids }),
-        });
-      }
-      setStatus("排序已保存", "ok");
-    }
-
-    categoryForm.addEventListener("submit", async (event) => {
-      event.preventDefault();
-      const body = {
-        name: categoryForm.elements.name.value,
-        icon: categoryForm.elements.icon.value,
-      };
-      const id = categoryForm.elements.id.value;
-      await api(id ? `categories/${id}` : "categories", { method: id ? "PUT" : "POST", body: JSON.stringify(body) });
-      resetCategoryForm();
-      await load();
-    });
-
-    bookmarkForm.addEventListener("submit", async (event) => {
-      event.preventDefault();
-      const body = {
-        category_id: Number(bookmarkForm.elements.category_id.value),
-        title: bookmarkForm.elements.title.value,
-        url: bookmarkForm.elements.url.value,
-      };
-      const id = bookmarkForm.elements.id.value;
-      await api(id ? `bookmarks/${id}` : "bookmarks", { method: id ? "PUT" : "POST", body: JSON.stringify(body) });
-      state.selectedCategoryId = body.category_id;
-      resetBookmarkForm();
-      await load();
-    });
-
     tenantForm.addEventListener("submit", async (event) => {
       event.preventDefault();
       const body = {
@@ -755,28 +451,12 @@
       await load();
     });
 
-    async function deleteCategory(id) {
-      await api(`categories/${id}`, { method: "DELETE" });
-      state.selectedCategoryId = null;
-      await load();
-    }
-
-    async function deleteBookmark(id) {
-      await api(`bookmarks/${id}`, { method: "DELETE" });
-      await load();
-    }
-
     document.getElementById("loginBtn").addEventListener("click", () => login().catch((error) => setStatus(error.message, "bad")));
     document.getElementById("refreshBtn").addEventListener("click", () => load().catch((error) => setStatus(error.message, "bad")));
-    document.querySelectorAll(".tab-button").forEach((button) => {
-      button.addEventListener("click", () => setActiveTab(button.dataset.tab));
-    });
     document.getElementById("generateTenantTokenBtn").addEventListener("click", () => {
       tenantForm.elements.admin_token.value = randomToken();
     });
     document.getElementById("resetTenantBtn").addEventListener("click", resetTenantForm);
-    document.getElementById("resetCategoryBtn").addEventListener("click", resetCategoryForm);
-    document.getElementById("resetBookmarkBtn").addEventListener("click", resetBookmarkForm);
 
     renderTabs();
     restoreSession().catch(() => setStatus("请输入 token"));
