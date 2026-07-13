@@ -196,12 +196,6 @@ async function getOptionalActor(request, env, db) {
   }
 }
 
-function requirePlatform(actor) {
-  if (actor.role !== "platform") {
-    throw Object.assign(new Error("Platform administrator token is required."), { status: 403 });
-  }
-}
-
 function requireTenantAdmin(actor) {
   if (!["platform", "admin"].includes(actor.role)) {
     throw Object.assign(new Error("Tenant administrator token is required."), { status: 403 });
@@ -263,15 +257,6 @@ async function listTenants(db) {
     .prepare("SELECT id, slug, name, sort_order, created_at, updated_at FROM tenants ORDER BY sort_order, id")
     .all();
   return results;
-}
-
-function ownTenant(actor) {
-  return [{
-    id: actor.tenant.id,
-    slug: actor.tenant.slug,
-    name: actor.tenant.name,
-    sort_order: actor.tenant.sort_order,
-  }];
 }
 
 async function createTenant(db, body) {
@@ -493,25 +478,22 @@ export async function onRequest(context) {
 
     if (method === "GET" && path === "tenants") {
       requireTenantAdmin(actor);
-      return json({ data: actor.role === "platform" ? await listTenants(db) : ownTenant(actor) });
+      return json({ data: await listTenants(db) });
     }
 
     if (method === "POST" && path === "tenants") {
-      requirePlatform(actor);
+      requireTenantAdmin(actor);
       return json(await createTenant(db, await readJson(request)), 201);
     }
 
     if (method === "PUT" && parts[0] === "tenants" && parts[1]) {
       requireTenantAdmin(actor);
       const id = toId(parts[1]);
-      if (actor.role !== "platform" && id !== actor.tenant.id) {
-        throw Object.assign(new Error("Tenant administrators can only update their own tenant."), { status: 403 });
-      }
       return json(await updateTenant(db, id, await readJson(request)));
     }
 
     if (method === "DELETE" && parts[0] === "tenants" && parts[1]) {
-      requirePlatform(actor);
+      requireTenantAdmin(actor);
       await db.prepare("DELETE FROM tenants WHERE id = ? AND slug <> ?").bind(toId(parts[1]), DEFAULT_TENANT).run();
       return json({ ok: true });
     }

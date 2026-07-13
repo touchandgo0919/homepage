@@ -480,13 +480,10 @@
       emptyPanel.style.display = state.role && !canManageTenant ? "" : "none";
       if (!canManageTenant) return;
 
-      document.getElementById("tenantCount").textContent = state.role === "platform" ? `${state.tenants.length} 个租户` : "当前租户";
-      document.getElementById("resetTenantBtn").style.display = state.role === "platform" ? "" : "none";
+      document.getElementById("tenantCount").textContent = `${state.tenants.length} 个租户`;
+      document.getElementById("resetTenantBtn").style.display = "";
       const root = document.getElementById("tenantList");
       root.innerHTML = "";
-      if (state.role !== "platform" && state.tenants[0] && !tenantForm.elements.id.value) {
-        fillTenantForm(state.tenants[0]);
-      }
       state.tenants.forEach((tenant) => {
         const row = document.createElement("div");
         row.className = `row ${state.tenant && tenant.slug === state.tenant.slug ? "active" : ""}`;
@@ -499,7 +496,7 @@
           </span>
           <span class="row-actions">
             <button class="btn icon" type="button" data-action="edit">✎</button>
-            ${state.role === "platform" ? '<button class="btn icon danger" type="button" data-action="delete">×</button>' : ""}
+            <button class="btn icon danger" type="button" data-action="delete">×</button>
           </span>
         `;
         row.addEventListener("click", async (event) => {
