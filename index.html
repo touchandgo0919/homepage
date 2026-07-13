@@ -1451,11 +1451,19 @@
       return sources;
     }
 
+    function remoteIconSources(domain) {
+      return [
+        `https://${domain}/favicon.ico`,
+        `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`,
+        `https://icons.duckduckgo.com/ip3/${domain}.ico`,
+      ];
+    }
+
     function renderFavicon(title, domain) {
       const sources = iconSources(domain);
       if (!sources.length) {
         return `
-          <span class="favicon" aria-hidden="true">
+          <span class="favicon" aria-hidden="true" data-domain="${escapeHtml(domain)}">
             <span>${getInitial(title)}</span>
           </span>
         `;
@@ -1489,6 +1497,34 @@
           setLoaded();
         }
       });
+    }
+
+    function loadRemoteFavicons(root) {
+      const icons = [...root.querySelectorAll(".favicon[data-domain]:not([data-loading])")];
+      const load = () => {
+        icons.forEach((icon, index) => {
+          icon.dataset.loading = "true";
+          window.setTimeout(() => {
+            if (icon.querySelector("img")) return;
+            const domain = icon.dataset.domain;
+            const sources = remoteIconSources(domain);
+            const img = document.createElement("img");
+            img.alt = "";
+            img.loading = "lazy";
+            img.dataset.sources = encodeURIComponent(JSON.stringify(sources));
+            img.dataset.sourceIndex = "0";
+            img.src = sources[0];
+            icon.prepend(img);
+            bindIconFallbacks(icon);
+          }, index * 35);
+        });
+      };
+
+      if ("requestIdleCallback" in window) {
+        window.requestIdleCallback(load, { timeout: 1200 });
+      } else {
+        window.setTimeout(load, 250);
+      }
     }
 
     function normalize(text) {
@@ -1742,6 +1778,7 @@
 
       nav.appendChild(navFragment);
       content.appendChild(contentFragment);
+      loadRemoteFavicons(content);
       emptyState.style.display = matches ? "none" : "block";
       updateActiveNav();
       updateAuthUi();
