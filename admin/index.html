@@ -373,6 +373,15 @@
       return [...bytes].map((byte) => alphabet[byte % alphabet.length]).join("");
     }
 
+    function copyIcon() {
+      return `
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <rect x="8" y="8" width="11" height="11" rx="2"></rect>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+        </svg>
+      `;
+    }
+
     async function api(path, options = {}) {
       const response = await fetch(`/api/${path}`, {
         ...options,
@@ -509,19 +518,20 @@
             <span class="sub">${escapeHtml(tenant.slug)}</span>
           </span>
           <span class="row-actions">
-            <button class="btn" type="button" data-action="copy">复制</button>
+            <button class="btn icon" type="button" data-action="copy" aria-label="复制租户令牌">${copyIcon()}</button>
             <button class="btn icon" type="button" data-action="edit">✎</button>
             <button class="btn icon danger" type="button" data-action="delete">×</button>
           </span>
         `;
         row.addEventListener("click", async (event) => {
-          const action = event.target.dataset.action;
+          const button = event.target.closest("button[data-action]");
+          const action = button?.dataset.action;
           if (action === "copy") {
             try {
               await copyText(tenant.admin_token);
-              event.target.textContent = "已复制";
+              button.textContent = "✓";
               window.setTimeout(() => {
-                event.target.textContent = "复制";
+                button.innerHTML = copyIcon();
               }, 1200);
             } catch (error) {
               setStatus(error.message || "复制失败", "bad");
