@@ -64,26 +64,48 @@
       gap: 18px;
       max-width: 1420px;
       margin: 0 auto;
-      padding: 18px 22px 28px;
+      padding: 0 22px 28px;
     }
 
-    .tenant-admin {
+    .tabs {
+      display: none;
+      max-width: 1420px;
+      margin: 18px auto 0;
+      padding: 0 22px;
+      gap: 8px;
+    }
+
+    .tabs.active { display: flex; }
+
+    .tab-button {
+      min-height: 38px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--muted);
+      padding: 0 14px;
+      font-weight: 780;
+    }
+
+    .tab-button.active {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .tab-panel {
       display: none;
       max-width: 1420px;
       margin: 18px auto 0;
       padding: 0 22px;
     }
 
-    .tenant-admin.active { display: block; }
+    .tab-panel.active { display: block; }
 
-    .token-admin {
-      display: none;
-      max-width: 1420px;
-      margin: 18px auto 0;
-      padding: 0 22px;
+    .settings-grid {
+      display: grid;
+      gap: 18px;
     }
-
-    .token-admin.active { display: block; }
 
     .panel {
       border: 1px solid var(--border);
@@ -162,6 +184,7 @@
 
     @media (max-width: 900px) {
       .layout { grid-template-columns: 1fr; padding-inline: 12px; }
+      .tabs, .tab-panel { padding-inline: 12px; }
       .topbar { align-items: flex-start; flex-direction: column; padding-inline: 12px; }
       .toolbar { justify-content: flex-start; }
       .span-2, .span-3, .span-4, .span-5, .span-6, .span-8 { grid-column: span 12; }
@@ -182,94 +205,101 @@
     </div>
   </header>
 
-  <section id="tenantAdmin" class="tenant-admin">
-    <div class="panel">
-      <div class="panel-head">
-        <h2>租户</h2>
-        <span id="tenantCount" class="count">平台管理员</span>
-      </div>
-      <form id="tenantForm" class="form">
-        <input type="hidden" name="id">
-        <label class="field span-3"><span>标识</span><input name="slug" required placeholder="team-a"></label>
-        <label class="field span-3"><span>名称</span><input name="name" required placeholder="Team A"></label>
-        <label class="field span-4"><span>租户令牌</span><input name="admin_token" placeholder="留空则编辑时不修改"></label>
-        <button class="btn primary span-2" type="submit">保存租户</button>
-        <button id="resetTenantBtn" class="btn ghost span-12" type="button">新建租户</button>
-      </form>
-      <div id="tenantList" class="list"></div>
-    </div>
+  <nav id="tabs" class="tabs" aria-label="管理导航">
+    <button class="tab-button active" type="button" data-tab="bookmarks">书签管理</button>
+    <button class="tab-button" type="button" data-tab="settings">系统设置</button>
+  </nav>
+
+  <section id="bookmarksTab" class="tab-panel active">
+    <main class="layout">
+      <section class="panel">
+        <div class="panel-head">
+          <h2>分类</h2>
+          <span id="categoryCount" class="count">0</span>
+        </div>
+        <form id="categoryForm" class="form">
+          <input type="hidden" name="id">
+          <label class="field span-5"><span>名称</span><input name="name" required placeholder="工作"></label>
+          <label class="field span-4">
+            <span>图标</span>
+            <select name="icon">
+              <option value="briefcase">工作</option>
+              <option value="book">学习</option>
+              <option value="cart">购物</option>
+              <option value="smile">娱乐</option>
+              <option value="money">理财</option>
+              <option value="router">路由</option>
+            </select>
+          </label>
+          <button class="btn primary span-3" type="submit">保存</button>
+          <button id="resetCategoryBtn" class="btn ghost span-12" type="button">新建分类</button>
+        </form>
+        <div id="categoryList" class="list"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2 id="bookmarkTitle">书签</h2>
+          <span id="bookmarkCount" class="count">0</span>
+        </div>
+        <form id="bookmarkForm" class="form">
+          <input type="hidden" name="id">
+          <label class="field span-3">
+            <span>分类</span>
+            <select name="category_id" required></select>
+          </label>
+          <label class="field span-3"><span>标题</span><input name="title" required placeholder="chatgpt"></label>
+          <label class="field span-4"><span>网址</span><input name="url" required placeholder="https://chatgpt.com/"></label>
+          <button class="btn primary span-2" type="submit">保存</button>
+          <button id="resetBookmarkBtn" class="btn ghost span-12" type="button">新建书签</button>
+        </form>
+        <div id="bookmarkList" class="list"></div>
+      </section>
+    </main>
   </section>
 
-  <section id="tokenAdmin" class="token-admin">
-    <div class="panel">
-      <div class="panel-head">
-        <h2>访问令牌</h2>
-        <span id="tokenCount" class="count">租户管理员</span>
-      </div>
-      <form id="accessTokenForm" class="form">
-        <label class="field span-3"><span>名称</span><input name="name" required placeholder="同事 A"></label>
-        <label class="field span-5"><span>Token</span><input name="token" required placeholder="一段足够长的随机字符串"></label>
-        <label class="field span-2">
-          <span>角色</span>
-          <select name="role">
-            <option value="editor">编辑者</option>
-            <option value="admin">管理员</option>
-          </select>
-        </label>
-        <button class="btn primary span-2" type="submit">创建 token</button>
-      </form>
-      <div id="accessTokenList" class="list"></div>
+  <section id="settingsTab" class="tab-panel">
+    <div class="settings-grid">
+      <section id="tenantAdmin" class="panel">
+        <div class="panel-head">
+          <h2>租户</h2>
+          <span id="tenantCount" class="count">平台管理员</span>
+        </div>
+        <form id="tenantForm" class="form">
+          <input type="hidden" name="id">
+          <label class="field span-3"><span>标识</span><input name="slug" required placeholder="team-a"></label>
+          <label class="field span-3"><span>名称</span><input name="name" required placeholder="Team A"></label>
+          <label class="field span-4"><span>租户令牌</span><input name="admin_token" placeholder="留空则编辑时不修改"></label>
+          <button class="btn primary span-2" type="submit">保存租户</button>
+          <button id="resetTenantBtn" class="btn ghost span-12" type="button">新建租户</button>
+        </form>
+        <div id="tenantList" class="list"></div>
+      </section>
+
+      <section id="tokenAdmin" class="panel">
+        <div class="panel-head">
+          <h2>访问令牌</h2>
+          <span id="tokenCount" class="count">租户管理员</span>
+        </div>
+        <form id="accessTokenForm" class="form">
+          <label class="field span-3"><span>名称</span><input name="name" required placeholder="同事 A"></label>
+          <label class="field span-5"><span>Token</span><input name="token" required placeholder="一段足够长的随机字符串"></label>
+          <label class="field span-2">
+            <span>角色</span>
+            <select name="role">
+              <option value="editor">编辑者</option>
+              <option value="admin">管理员</option>
+            </select>
+          </label>
+          <button class="btn primary span-2" type="submit">创建 token</button>
+        </form>
+        <div id="accessTokenList" class="list"></div>
+      </section>
     </div>
   </section>
-
-  <main class="layout">
-    <section class="panel">
-      <div class="panel-head">
-        <h2>分类</h2>
-        <span id="categoryCount" class="count">0</span>
-      </div>
-      <form id="categoryForm" class="form">
-        <input type="hidden" name="id">
-        <label class="field span-5"><span>名称</span><input name="name" required placeholder="工作"></label>
-        <label class="field span-4">
-          <span>图标</span>
-          <select name="icon">
-            <option value="briefcase">工作</option>
-            <option value="book">学习</option>
-            <option value="cart">购物</option>
-            <option value="smile">娱乐</option>
-            <option value="money">理财</option>
-            <option value="router">路由</option>
-          </select>
-        </label>
-        <button class="btn primary span-3" type="submit">保存</button>
-        <button id="resetCategoryBtn" class="btn ghost span-12" type="button">新建分类</button>
-      </form>
-      <div id="categoryList" class="list"></div>
-    </section>
-
-    <section class="panel">
-      <div class="panel-head">
-        <h2 id="bookmarkTitle">书签</h2>
-        <span id="bookmarkCount" class="count">0</span>
-      </div>
-      <form id="bookmarkForm" class="form">
-        <input type="hidden" name="id">
-        <label class="field span-3">
-          <span>分类</span>
-          <select name="category_id" required></select>
-        </label>
-        <label class="field span-3"><span>标题</span><input name="title" required placeholder="chatgpt"></label>
-        <label class="field span-4"><span>网址</span><input name="url" required placeholder="https://chatgpt.com/"></label>
-        <button class="btn primary span-2" type="submit">保存</button>
-        <button id="resetBookmarkBtn" class="btn ghost span-12" type="button">新建书签</button>
-      </form>
-      <div id="bookmarkList" class="list"></div>
-    </section>
-  </main>
 
   <script>
-    const state = { data: [], tenants: [], tokens: [], selectedCategoryId: null, dragging: null, role: "", tenant: null };
+    const state = { data: [], tenants: [], tokens: [], selectedCategoryId: null, dragging: null, role: "", tenant: null, activeTab: "bookmarks" };
     const tokenInput = document.getElementById("tokenInput");
     const statusEl = document.getElementById("status");
     const tenantForm = document.getElementById("tenantForm");
@@ -385,11 +415,42 @@
     }
 
     function render() {
+      renderTabs();
       renderTenantAdmin();
       renderTokenAdmin();
       renderCategoryList();
       renderBookmarkFormOptions();
       renderBookmarkList();
+    }
+
+    function canUseSettings() {
+      return ["platform", "admin"].includes(state.role);
+    }
+
+    function setActiveTab(tab) {
+      state.activeTab = tab === "settings" && canUseSettings() ? "settings" : "bookmarks";
+      renderTabs();
+    }
+
+    function renderTabs() {
+      const tabs = document.getElementById("tabs");
+      const settingsButton = document.querySelector('[data-tab="settings"]');
+      const bookmarksPanel = document.getElementById("bookmarksTab");
+      const settingsPanel = document.getElementById("settingsTab");
+      const loggedIn = Boolean(state.role);
+
+      tabs.classList.toggle("active", loggedIn);
+      settingsButton.style.display = canUseSettings() ? "" : "none";
+
+      if (!canUseSettings() && state.activeTab === "settings") {
+        state.activeTab = "bookmarks";
+      }
+
+      document.querySelectorAll(".tab-button").forEach((button) => {
+        button.classList.toggle("active", button.dataset.tab === state.activeTab);
+      });
+      bookmarksPanel.classList.toggle("active", loggedIn && state.activeTab === "bookmarks");
+      settingsPanel.classList.toggle("active", loggedIn && state.activeTab === "settings" && canUseSettings());
     }
 
     function resetTenantForm() {
@@ -399,7 +460,7 @@
 
     function renderTenantAdmin() {
       const panel = document.getElementById("tenantAdmin");
-      panel.classList.toggle("active", state.role === "platform");
+      panel.style.display = state.role === "platform" ? "" : "none";
       if (state.role !== "platform") return;
 
       document.getElementById("tenantCount").textContent = `${state.tenants.length} 个租户`;
@@ -446,8 +507,8 @@
 
     function renderTokenAdmin() {
       const panel = document.getElementById("tokenAdmin");
-      panel.classList.toggle("active", ["platform", "admin"].includes(state.role));
-      if (!["platform", "admin"].includes(state.role)) return;
+      panel.style.display = canUseSettings() ? "" : "none";
+      if (!canUseSettings()) return;
 
       document.getElementById("tokenCount").textContent = `${state.tokens.length} 个 token`;
       const root = document.getElementById("accessTokenList");
@@ -678,10 +739,14 @@
 
     document.getElementById("loginBtn").addEventListener("click", () => login().catch((error) => setStatus(error.message, "bad")));
     document.getElementById("refreshBtn").addEventListener("click", () => load().catch((error) => setStatus(error.message, "bad")));
+    document.querySelectorAll(".tab-button").forEach((button) => {
+      button.addEventListener("click", () => setActiveTab(button.dataset.tab));
+    });
     document.getElementById("resetTenantBtn").addEventListener("click", resetTenantForm);
     document.getElementById("resetCategoryBtn").addEventListener("click", resetCategoryForm);
     document.getElementById("resetBookmarkBtn").addEventListener("click", resetBookmarkForm);
 
+    renderTabs();
     restoreSession().catch(() => setStatus("请输入 token"));
   </script>
 </body>
