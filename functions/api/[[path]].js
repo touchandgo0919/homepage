@@ -128,47 +128,50 @@ async function getTenantBySlug(db, slug) {
 
 async function requireActor(request, env, db) {
   const token = authToken(request);
+  if (!token) {
+    throw Object.assign(new Error("Unauthorized"), { status: 401 });
+  }
+
   const platformToken = env.ADMIN_TOKEN || "";
   const requestedSlug = rawRequestedTenantSlug(request);
   const tenantSlug = requestedSlug || DEFAULT_TENANT;
-  const tenant = await getTenantBySlug(db, tenantSlug);
 
   if (platformToken && token === platformToken) {
+    const tenant = await getTenantBySlug(db, tenantSlug);
     return { role: "platform", tenant };
   }
 
-  if (token) {
-    const tokenRow = await db
-      .prepare(
-        `SELECT tenant_tokens.id AS token_id, tenant_tokens.name AS token_name, tenant_tokens.role,
-                tenants.id, tenants.slug, tenants.name, tenants.admin_token, tenants.sort_order
-         FROM tenant_tokens
-         JOIN tenants ON tenants.id = tenant_tokens.tenant_id
-         WHERE tenant_tokens.token = ?`
-      )
-      .bind(token)
-      .first();
+  const tokenRow = await db
+    .prepare(
+      `SELECT tenant_tokens.id AS token_id, tenant_tokens.name AS token_name, tenant_tokens.role,
+              tenants.id, tenants.slug, tenants.name, tenants.admin_token, tenants.sort_order
+       FROM tenant_tokens
+       JOIN tenants ON tenants.id = tenant_tokens.tenant_id
+       WHERE tenant_tokens.token = ?`
+    )
+    .bind(token)
+    .first();
 
-    if (tokenRow) {
-      if (requestedSlug && requestedSlug !== tokenRow.slug) {
-        throw Object.assign(new Error("Token does not belong to requested tenant."), { status: 403 });
-      }
-      return {
-        role: tokenRow.role,
-        token: { id: tokenRow.token_id, name: tokenRow.token_name },
-        tenant: {
-          id: tokenRow.id,
-          slug: tokenRow.slug,
-          name: tokenRow.name,
-          admin_token: tokenRow.admin_token,
-          sort_order: tokenRow.sort_order,
-        },
-      };
+  if (tokenRow) {
+    if (requestedSlug && requestedSlug !== tokenRow.slug) {
+      throw Object.assign(new Error("Token does not belong to requested tenant."), { status: 403 });
     }
+    return {
+      role: tokenRow.role,
+      token: { id: tokenRow.token_id, name: tokenRow.token_name },
+      tenant: {
+        id: tokenRow.id,
+        slug: tokenRow.slug,
+        name: tokenRow.name,
+        admin_token: tokenRow.admin_token,
+        sort_order: tokenRow.sort_order,
+      },
+    };
+  }
 
-    if (token === tenant.admin_token) {
-      return { role: "admin", tenant };
-    }
+  const tenant = await getTenantBySlug(db, tenantSlug);
+  if (token === tenant.admin_token) {
+    return { role: "admin", tenant };
   }
 
   throw Object.assign(new Error("Unauthorized"), { status: 401 });
@@ -197,8 +200,7 @@ function requireTenantAdmin(actor) {
   }
 }
 
-async function getNav(db, slug) {
-  const tenant = await getTenantBySlug(db, slug);
+async function getNavForTenant(db, tenant) {
   const { results: categories } = await db
     .prepare(
       "SELECT id, name AS category, icon, sort_order FROM categories WHERE tenant_id = ? ORDER BY sort_order, id"
@@ -215,6 +217,21 @@ async function getNav(db, slug) {
     .bind(tenant.id)
     .all();
 
+  const bookmarksByCategory = new Map();
+  for (const bookmark of bookmarks) {
+    if (!bookmarksByCategory.has(bookmark.category_id)) {
+      bookmarksByCategory.set(bookmark.category_id, []);
+    }
+    bookmarksByCategory.get(bookmark.category_id).push({
+      id: bookmark.id,
+      tenant_id: bookmark.tenant_id,
+      category_id: bookmark.category_id,
+      title: bookmark.title,
+      url: bookmark.url,
+      sort_order: bookmark.sort_order,
+    });
+  }
+
   return {
     authenticated: true,
     tenant: { id: tenant.id, slug: tenant.slug, name: tenant.name },
@@ -223,18 +240,13 @@ async function getNav(db, slug) {
       category: category.category,
       icon: category.icon,
       sort_order: category.sort_order,
-      links: bookmarks
-        .filter((bookmark) => bookmark.category_id === category.id)
-        .map((bookmark) => ({
-          id: bookmark.id,
-          tenant_id: bookmark.tenant_id,
-          category_id: bookmark.category_id,
-          title: bookmark.title,
-          url: bookmark.url,
-          sort_order: bookmark.sort_order,
-        })),
+      links: bookmarksByCategory.get(category.id) || [],
     })),
   };
+}
+
+async function getNav(db, slug) {
+  return getNavForTenant(db, await getTenantBySlug(db, slug));
 }
 
 async function listTenants(db) {
@@ -431,8 +443,10 @@ export async function onRequest(context) {
         return json(emptyNav());
       }
       const requestedSlug = rawRequestedTenantSlug(request);
-      const slug = actor.role === "platform" ? requestedSlug || actor.tenant.slug : actor.tenant.slug;
-      return json({ ...(await getNav(db, slug)), role: actor.role });
+      const nav = actor.role === "platform" && requestedSlug && requestedSlug !== actor.tenant.slug
+        ? await getNav(db, requestedSlug)
+        : await getNavForTenant(db, actor.tenant);
+      return json({ ...nav, role: actor.role });
     }
 
     if (path === "health") {
