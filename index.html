@@ -317,8 +317,21 @@
       outline-offset: -5px;
     }
 
-    .drag-over {
-      box-shadow: inset 0 0 0 2px var(--accent);
+    .sort-placeholder {
+      min-height: 76px;
+      border: 2px dashed var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .category-placeholder {
+      min-height: 40px;
+      border: 2px dashed var(--accent);
+      border-radius: var(--radius);
+      background: var(--accent-soft);
+    }
+
+    .dragging {
+      opacity: 0.35;
     }
 
     .theme-toggle svg {
@@ -1191,6 +1204,7 @@
 
     let siteData = fallbackSiteData;
     const authState = { authenticated: false, role: "", tenant: null, editMode: false, selectedCategoryId: null };
+    const dragState = { type: "", id: "", sourceCategoryId: "", placeholder: null };
 
     const content = document.getElementById("content");
     const nav = document.getElementById("categoryNav");
@@ -1326,12 +1340,68 @@
         .replaceAll("'", "&#039;");
     }
 
+    function clearPlaceholder() {
+      if (dragState.placeholder) {
+        dragState.placeholder.remove();
+        dragState.placeholder = null;
+      }
+      document.querySelectorAll(".dragging").forEach((element) => element.classList.remove("dragging"));
+    }
+
+    function placeholder(className) {
+      if (!dragState.placeholder || !dragState.placeholder.classList.contains(className)) {
+        clearPlaceholder();
+        dragState.placeholder = document.createElement("div");
+        dragState.placeholder.className = className;
+      }
+      return dragState.placeholder;
+    }
+
+    function cardInsertReference(container, pointerX, pointerY) {
+      const cards = [...container.querySelectorAll(".card:not(.dragging)")];
+      return cards.find((card) => {
+        const rect = card.getBoundingClientRect();
+        const sameRow = pointerY >= rect.top && pointerY <= rect.bottom;
+        if (sameRow) return pointerX < rect.left + rect.width / 2;
+        return pointerY < rect.top + rect.height / 2;
+      }) || null;
+    }
+
+    function categoryInsertReference(container, pointerX, pointerY) {
+      const items = [...container.querySelectorAll(".nav-link:not(.dragging)")];
+      return items.find((item) => {
+        const rect = item.getBoundingClientRect();
+        const horizontal = getComputedStyle(container).display === "flex";
+        return horizontal ? pointerX < rect.left + rect.width / 2 : pointerY < rect.top + rect.height / 2;
+      }) || null;
+    }
+
+    function placeholderIndex(container, selector) {
+      return [...container.querySelectorAll(`${selector}, .sort-placeholder, .category-placeholder`)]
+        .filter((element) => !element.classList.contains("dragging"))
+        .indexOf(dragState.placeholder);
+    }
+
     function render(filterText = "") {
       const keyword = normalize(filterText);
       let matches = 0;
 
       content.innerHTML = "";
       nav.innerHTML = "";
+      nav.ondragover = (event) => {
+        if (authState.editMode && Array.from(event.dataTransfer.types).includes("application/x-category-id")) {
+          event.preventDefault();
+          const marker = placeholder("category-placeholder");
+          nav.insertBefore(marker, categoryInsertReference(nav, event.clientX, event.clientY));
+        }
+      };
+      nav.ondrop = async (event) => {
+        const sourceCategoryId = event.dataTransfer.getData("application/x-category-id");
+        if (sourceCategoryId) {
+          event.preventDefault();
+          await moveCategory(sourceCategoryId, placeholderIndex(nav, ".nav-link"));
+        }
+      };
 
       siteData.forEach((group, index) => {
         const filteredLinks = group.links.filter((link) => {
@@ -1358,22 +1428,28 @@
         `;
         navLink.addEventListener("dragstart", (event) => {
           if (!authState.editMode) return;
+          dragState.type = "category";
+          dragState.id = String(group.id);
           event.dataTransfer.setData("application/x-category-id", String(group.id));
           event.dataTransfer.effectAllowed = "move";
+          navLink.classList.add("dragging");
         });
         navLink.addEventListener("dragover", (event) => {
           if (authState.editMode && Array.from(event.dataTransfer.types).includes("application/x-category-id")) {
             event.preventDefault();
+            const marker = placeholder("category-placeholder");
+            nav.insertBefore(marker, categoryInsertReference(nav, event.clientX, event.clientY));
           }
         });
         navLink.addEventListener("drop", async (event) => {
           const sourceCategoryId = event.dataTransfer.getData("application/x-category-id");
           if (sourceCategoryId) {
             event.preventDefault();
-            await moveCategory(sourceCategoryId, group.id);
+            event.stopPropagation();
+            await moveCategory(sourceCategoryId, placeholderIndex(nav, ".nav-link"));
           }
         });
-        enableDropState(navLink);
+        navLink.addEventListener("dragend", clearPlaceholder);
         nav.appendChild(navLink);
 
         const section = document.createElement("section");
@@ -1395,16 +1471,18 @@
         grid.addEventListener("dragover", (event) => {
           if (authState.editMode && Array.from(event.dataTransfer.types).includes("application/x-bookmark-id")) {
             event.preventDefault();
+            const marker = placeholder("sort-placeholder");
+            grid.insertBefore(marker, cardInsertReference(grid, event.clientX, event.clientY));
           }
         });
         grid.addEventListener("drop", async (event) => {
           const bookmarkId = event.dataTransfer.getData("application/x-bookmark-id");
           if (bookmarkId) {
             event.preventDefault();
-            await moveBookmark(bookmarkId, group.id);
+            event.stopPropagation();
+            await moveBookmark(bookmarkId, group.id, placeholderIndex(grid, ".card"));
           }
         });
-        enableDropState(grid);
         filteredLinks.forEach((link) => {
           const card = document.createElement("a");
           const domain = getDomain(link.url);
@@ -1431,22 +1509,29 @@
           });
           card.addEventListener("dragstart", (event) => {
             if (!authState.editMode) return;
+            dragState.type = "bookmark";
+            dragState.id = String(link.id);
+            dragState.sourceCategoryId = String(group.id);
             event.dataTransfer.setData("application/x-bookmark-id", String(link.id));
             event.dataTransfer.effectAllowed = "move";
+            card.classList.add("dragging");
           });
           card.addEventListener("dragover", (event) => {
             if (authState.editMode && Array.from(event.dataTransfer.types).includes("application/x-bookmark-id")) {
               event.preventDefault();
+              const marker = placeholder("sort-placeholder");
+              grid.insertBefore(marker, cardInsertReference(grid, event.clientX, event.clientY));
             }
           });
           card.addEventListener("drop", async (event) => {
             const bookmarkId = event.dataTransfer.getData("application/x-bookmark-id");
             if (bookmarkId) {
               event.preventDefault();
-              await moveBookmark(bookmarkId, group.id, link.id);
+              event.stopPropagation();
+              await moveBookmark(bookmarkId, group.id, placeholderIndex(grid, ".card"));
             }
           });
-          enableDropState(card);
+          card.addEventListener("dragend", clearPlaceholder);
           bindIconFallbacks(card);
           grid.appendChild(card);
         });
@@ -1509,8 +1594,7 @@
       }
     }
 
-    async function moveBookmark(bookmarkId, targetCategoryId, targetBookmarkId = null) {
-      if (targetBookmarkId && String(bookmarkId) === String(targetBookmarkId)) return;
+    async function moveBookmark(bookmarkId, targetCategoryId, targetIndex = -1) {
       const source = findBookmark(bookmarkId);
       const targetCategory = findCategory(targetCategoryId);
       if (!source || !targetCategory) return;
@@ -1518,37 +1602,29 @@
       const [bookmark] = source.category.links.splice(source.index, 1);
       bookmark.category_id = Number(targetCategory.id);
 
-      let targetIndex = targetCategory.links.length;
-      if (targetBookmarkId) {
-        const foundIndex = targetCategory.links.findIndex((item) => String(item.id) === String(targetBookmarkId));
-        if (foundIndex > -1) targetIndex = foundIndex;
+      let index = Number.isInteger(targetIndex) && targetIndex > -1 ? targetIndex : targetCategory.links.length;
+      if (String(source.category.id) === String(targetCategory.id) && source.index < index) {
+        index -= 1;
       }
-      targetCategory.links.splice(targetIndex, 0, bookmark);
+      targetCategory.links.splice(Math.max(0, Math.min(index, targetCategory.links.length)), 0, bookmark);
       render("");
       await persistBookmarkOrder(source.category.id, targetCategory.id);
       await loadSiteData();
     }
 
-    async function moveCategory(sourceCategoryId, targetCategoryId) {
+    async function moveCategory(sourceCategoryId, targetIndex) {
       const from = siteData.findIndex((category) => String(category.id) === String(sourceCategoryId));
-      const to = siteData.findIndex((category) => String(category.id) === String(targetCategoryId));
-      if (from < 0 || to < 0 || from === to) return;
+      if (from < 0) return;
       const [category] = siteData.splice(from, 1);
-      siteData.splice(to, 0, category);
+      let index = Number.isInteger(targetIndex) && targetIndex > -1 ? targetIndex : siteData.length;
+      if (from < index) index -= 1;
+      siteData.splice(Math.max(0, Math.min(index, siteData.length)), 0, category);
       render("");
       await api("reorder/categories", {
         method: "POST",
         body: JSON.stringify({ ids: siteData.map((item) => item.id) }),
       });
       await loadSiteData();
-    }
-
-    function enableDropState(element) {
-      element.addEventListener("dragenter", () => {
-        if (authState.editMode) element.classList.add("drag-over");
-      });
-      element.addEventListener("dragleave", () => element.classList.remove("drag-over"));
-      element.addEventListener("drop", () => element.classList.remove("drag-over"));
     }
 
     async function loadSiteData() {
