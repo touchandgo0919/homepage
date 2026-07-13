@@ -7,6 +7,6 @@ ADMIN_TOKEN = "76228f6039d240938f550232266157e066a778401c04479cabfa69289b92f5b4"
 
 [[d1_databases]]
 binding = "DB"
-database_name = "homepage-nav"
-database_id = "00000000-0000-0000-0000-000000000000"
+database_name = "homepage"
+database_id = "7d8641d3-91a1-4b42-8564-a710f2ba274e"
 migrations_dir = "migrations"
