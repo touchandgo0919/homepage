@@ -1359,6 +1359,7 @@
     const searchInput = document.getElementById("searchInput");
     const emptyState = document.getElementById("emptyState");
     const guestEmpty = document.getElementById("guestEmpty");
+    const topbar = document.querySelector(".topbar");
     const shell = document.querySelector(".shell");
     const loginForm = document.getElementById("loginForm");
     const tokenDisplay = document.getElementById("tokenDisplay");
@@ -1376,6 +1377,12 @@
 
     function visibleToken() {
       return localStorage.getItem("nav-visible-token") || "";
+    }
+
+    function syncSidebarOffset() {
+      const shellPaddingTop = parseFloat(getComputedStyle(shell).paddingTop || "0");
+      const contentTop = Math.round(topbar.getBoundingClientRect().bottom + shellPaddingTop);
+      document.documentElement.style.setProperty("--content-top", `${contentTop}px`);
     }
 
     async function api(path, options = {}) {
@@ -1980,12 +1987,14 @@
 
       shell.style.display = "grid";
       guestEmpty.style.display = "none";
+      syncSidebarOffset();
       updateSummary();
       updateAuthUi();
       render("");
     }
 
     applyTheme(savedTheme || (prefersDark ? "dark" : "light"));
+    syncSidebarOffset();
     loadSiteData();
 
     searchInput.addEventListener("input", (event) => render(event.target.value));
@@ -2068,6 +2077,7 @@
       applyTheme(nextTheme);
     });
     window.addEventListener("scroll", updateActiveNav, { passive: true });
+    window.addEventListener("resize", syncSidebarOffset, { passive: true });
   </script>
 </body>
 </html>
