@@ -71,7 +71,6 @@
     .settings-grid {
       display: grid;
       gap: 18px;
-      grid-template-columns: minmax(0, 1.15fr) minmax(360px, .85fr);
     }
 
     .panel {
@@ -189,7 +188,6 @@
     <div class="toolbar">
       <input id="tokenInput" class="btn" type="password" placeholder="输入 token">
       <button id="loginBtn" class="btn primary" type="button">登录</button>
-      <button id="refreshBtn" class="btn primary" type="button">刷新</button>
       <span id="status" class="status">等待加载</span>
     </div>
   </header>
@@ -227,45 +225,15 @@
         </form>
         <div id="tenantList" class="list"></div>
       </section>
-
-      <section id="tokenAdmin" class="panel">
-        <div class="panel-head">
-          <h2>访问令牌</h2>
-          <span id="tokenCount" class="count">租户管理员</span>
-        </div>
-        <form id="accessTokenForm" class="form">
-          <label class="field span-6"><span>名称</span><input name="name" required placeholder="同事 A"></label>
-          <label class="field span-6">
-            <span>角色</span>
-            <select name="role">
-              <option value="editor">编辑者</option>
-              <option value="admin">管理员</option>
-            </select>
-          </label>
-          <label class="field span-12">
-            <span>Token</span>
-            <span class="input-action">
-              <input name="token" required placeholder="随机生成或手动输入">
-              <button id="generateAccessTokenBtn" class="btn" type="button">随机</button>
-            </span>
-          </label>
-          <div class="form-actions span-12">
-            <button class="btn primary" type="submit">创建 token</button>
-          </div>
-        </form>
-        <div id="accessTokenList" class="list"></div>
-      </section>
     </div>
   </section>
 
   <script>
-    const state = { tenants: [], tokens: [], role: "", tenant: null };
+    const state = { tenants: [], role: "", tenant: null };
     const tokenInput = document.getElementById("tokenInput");
     const loginBtn = document.getElementById("loginBtn");
-    const refreshBtn = document.getElementById("refreshBtn");
     const statusEl = document.getElementById("status");
     const tenantForm = document.getElementById("tenantForm");
-    const accessTokenForm = document.getElementById("accessTokenForm");
 
     localStorage.removeItem("nav-admin-token");
 
@@ -316,9 +284,6 @@
       if (state.role === "platform") {
         await loadTenants();
       }
-      if (["platform", "admin"].includes(state.role)) {
-        await loadTokens();
-      }
       render();
       setStatus("已同步", "ok");
     }
@@ -350,23 +315,16 @@
       state.tenants = body.data || [];
     }
 
-    async function loadTokens() {
-      const body = await api("tokens");
-      state.tokens = body.data || [];
-    }
-
     function render() {
       renderToolbar();
       renderTabs();
       renderTenantAdmin();
-      renderTokenAdmin();
     }
 
     function renderToolbar() {
       const loggedIn = Boolean(state.role);
       tokenInput.style.display = loggedIn ? "none" : "";
       loginBtn.style.display = loggedIn ? "none" : "";
-      refreshBtn.textContent = loggedIn ? "刷新" : "检查会话";
     }
 
     function canUseSettings() {
@@ -430,38 +388,6 @@
       });
     }
 
-    function renderTokenAdmin() {
-      const panel = document.getElementById("tokenAdmin");
-      panel.style.display = canUseSettings() ? "" : "none";
-      if (!canUseSettings()) return;
-
-      document.getElementById("tokenCount").textContent = `${state.tokens.length} 个 token`;
-      const root = document.getElementById("accessTokenList");
-      root.innerHTML = "";
-      state.tokens.forEach((item) => {
-        const row = document.createElement("div");
-        row.className = "row";
-        row.dataset.id = item.id;
-        row.innerHTML = `
-          <span class="handle">钥</span>
-          <span>
-            <span class="title">${escapeHtml(item.name)}</span>
-            <span class="sub">${escapeHtml(item.role === "admin" ? "管理员" : "编辑者")}</span>
-          </span>
-          <span class="row-actions">
-            <button class="btn icon danger" type="button" data-action="delete">×</button>
-          </span>
-        `;
-        row.addEventListener("click", async (event) => {
-          if (event.target.dataset.action === "delete") {
-            await api(`tokens/${item.id}`, { method: "DELETE" });
-            await load();
-          }
-        });
-        root.appendChild(row);
-      });
-    }
-
     tenantForm.addEventListener("submit", async (event) => {
       event.preventDefault();
       const body = {
@@ -480,25 +406,9 @@
       await load();
     });
 
-    accessTokenForm.addEventListener("submit", async (event) => {
-      event.preventDefault();
-      const body = {
-        name: accessTokenForm.elements.name.value,
-        token: accessTokenForm.elements.token.value,
-        role: accessTokenForm.elements.role.value,
-      };
-      await api("tokens", { method: "POST", body: JSON.stringify(body) });
-      accessTokenForm.reset();
-      await load();
-    });
-
     loginBtn.addEventListener("click", () => login().catch((error) => setStatus(error.message, "bad")));
-    refreshBtn.addEventListener("click", () => load().catch((error) => setStatus(error.message, "bad")));
     document.getElementById("generateTenantTokenBtn").addEventListener("click", () => {
       tenantForm.elements.admin_token.value = randomToken();
-    });
-    document.getElementById("generateAccessTokenBtn").addEventListener("click", () => {
-      accessTokenForm.elements.token.value = randomToken();
     });
     document.getElementById("resetTenantBtn").addEventListener("click", resetTenantForm);
 
