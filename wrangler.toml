@@ -1,9 +1,13 @@
 name = "homepage"
+main = "src/index.js"
 compatibility_date = "2026-07-12"
-pages_build_output_dir = "dist"
 
 [vars]
 ADMIN_TOKEN = "76228f6039d240938f550232266157e066a778401c04479cabfa69289b92f5b4"
+
+[assets]
+directory = "./dist/"
+binding = "ASSETS"
 
 [[d1_databases]]
 binding = "DB"

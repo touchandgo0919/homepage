@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "build": "node scripts/build.mjs",
-    "dev": "npm run build && wrangler pages dev dist",
-    "deploy": "npm run build && wrangler pages deploy dist --project-name homepage",
+    "dev": "npm run build && wrangler dev",
+    "deploy": "npm run build && wrangler deploy",
     "db:create": "wrangler d1 create homepage-nav",
     "db:migrate:local": "wrangler d1 migrations apply homepage-nav --local",
     "db:migrate:remote": "wrangler d1 migrations apply homepage-nav --remote",
