@@ -67,7 +67,8 @@
     }
 
     button,
-    input {
+    input,
+    select {
       font: inherit;
     }
 
@@ -303,6 +304,52 @@
       padding: 10px 12px;
     }
 
+    .edit-tools {
+      display: none;
+      align-items: center;
+      gap: 8px;
+    }
+
+    [data-editing="true"] .edit-tools {
+      display: inline-flex;
+    }
+
+    .tool-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 32px;
+      min-width: 32px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--muted);
+      cursor: pointer;
+      padding: 0 10px;
+      font-weight: 760;
+      transition: border-color 160ms ease, color 160ms ease, background 160ms ease;
+    }
+
+    .tool-btn:hover {
+      border-color: color-mix(in srgb, var(--accent) 54%, var(--border));
+      color: var(--accent);
+    }
+
+    .tool-btn.primary {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .tool-btn.danger {
+      color: #d92d20;
+    }
+
+    .tool-btn.icon {
+      width: 32px;
+      padding: 0;
+    }
+
     [data-editing="true"] .edit-hint {
       display: block;
     }
@@ -315,6 +362,7 @@
     [data-editing="true"] .card {
       outline: 1px dashed color-mix(in srgb, var(--accent) 44%, transparent);
       outline-offset: -5px;
+      padding-right: 52px;
     }
 
     .sort-placeholder {
@@ -390,6 +438,13 @@
       border-bottom: 1px solid var(--border);
     }
 
+    .sidebar-head-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
     .sidebar-title {
       margin: 0;
       font-size: 13px;
@@ -451,6 +506,14 @@
     .nav-count {
       color: var(--subtle);
       font-size: 12px;
+    }
+
+    .nav-link .edit-tools {
+      justify-content: flex-end;
+    }
+
+    [data-editing="true"] .nav-link {
+      grid-template-columns: 30px minmax(0, 1fr) auto auto;
     }
 
     .main {
@@ -530,6 +593,13 @@
       font-weight: 760;
     }
 
+    .section-meta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-left: auto;
+    }
+
     .grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(142px, 1fr));
@@ -541,6 +611,7 @@
     .card {
       display: grid;
       grid-template-columns: 42px minmax(0, 1fr);
+      position: relative;
       align-items: center;
       gap: 10px;
       min-height: 76px;
@@ -613,6 +684,95 @@
       line-height: 1.2;
       text-overflow: ellipsis;
       white-space: nowrap;
+    }
+
+    .card-actions {
+      display: none;
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      flex-direction: column;
+      gap: 6px;
+      z-index: 2;
+    }
+
+    [data-editing="true"] .card-actions {
+      display: inline-flex;
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      display: none;
+      place-items: center;
+      background: rgba(15, 23, 42, 0.42);
+      padding: 18px;
+    }
+
+    .modal.active {
+      display: grid;
+    }
+
+    .modal-card {
+      width: min(520px, 100%);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .modal-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      border-bottom: 1px solid var(--border);
+      padding: 14px 16px;
+    }
+
+    .modal-head h2 {
+      margin: 0;
+      font-size: 16px;
+    }
+
+    .modal-form {
+      display: grid;
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      gap: 10px;
+      padding: 16px;
+    }
+
+    .field {
+      display: grid;
+      gap: 6px;
+    }
+
+    .field span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 760;
+    }
+
+    .field input,
+    .field select {
+      width: 100%;
+      height: 40px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text);
+      outline: 0;
+      padding: 0 10px;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      grid-column: span 12;
+      padding-top: 4px;
     }
 
     .empty {
@@ -933,7 +1093,10 @@
   <div class="shell">
     <aside class="sidebar">
       <div class="sidebar-head">
-        <p class="sidebar-title">全部收藏</p>
+        <div class="sidebar-head-row">
+          <p class="sidebar-title">全部收藏</p>
+          <button class="tool-btn primary edit-tools" id="addCategoryBtn" type="button">新增分组</button>
+        </div>
         <div class="sidebar-total" id="totalCount">0</div>
       </div>
       <nav class="category-nav" id="categoryNav" aria-label="收藏分类"></nav>
@@ -977,6 +1140,16 @@
   </div>
 
   <footer class="footer">Hosted on Cloudflare Pages</footer>
+
+  <div class="modal" id="editModal" aria-hidden="true">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal-head">
+        <h2 id="modalTitle">编辑</h2>
+        <button class="tool-btn icon" id="modalClose" type="button" aria-label="关闭">×</button>
+      </div>
+      <form class="modal-form" id="modalForm"></form>
+    </div>
+  </div>
 
   <script>
     const fallbackSiteData = [
@@ -1217,8 +1390,14 @@
     const editToggle = document.getElementById("editToggle");
     const adminLink = document.getElementById("adminLink");
     const logoutBtn = document.getElementById("logoutBtn");
+    const addCategoryBtn = document.getElementById("addCategoryBtn");
+    const editModal = document.getElementById("editModal");
+    const modalTitle = document.getElementById("modalTitle");
+    const modalForm = document.getElementById("modalForm");
+    const modalClose = document.getElementById("modalClose");
     const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
     const savedTheme = localStorage.getItem("nav-theme");
+    const modalState = { type: "", id: "", categoryId: "" };
 
     function visibleToken() {
       return localStorage.getItem("nav-visible-token") || "";
@@ -1251,7 +1430,7 @@
       tokenDisplay.style.display = authState.authenticated ? "inline-flex" : "none";
       tokenDisplay.textContent = visibleToken();
       editToggle.style.display = authState.authenticated ? "inline-flex" : "none";
-      editToggle.textContent = authState.editMode ? "收起编辑" : "编辑";
+      editToggle.textContent = authState.editMode ? "保存" : "编辑";
       adminLink.style.display = authState.authenticated && canManageSystem() ? "inline-flex" : "none";
       logoutBtn.style.display = authState.authenticated ? "inline-flex" : "none";
       document.body.dataset.editing = authState.authenticated && authState.editMode ? "true" : "false";
@@ -1423,7 +1602,7 @@
         navLink.draggable = authState.editMode;
         navLink.innerHTML = `
           <span class="nav-icon">${svgIcon(group.icon)}</span>
-          <span class="nav-name">${group.category}</span>
+          <span class="nav-name">${escapeHtml(group.category)}</span>
           <span class="nav-count">${filteredLinks.length}</span>
         `;
         navLink.addEventListener("dragstart", (event) => {
@@ -1459,12 +1638,34 @@
           <div class="section-head">
             <h2 class="section-title">
               <span class="nav-icon">${svgIcon(group.icon)}</span>
-              ${group.category}
+              <span>${escapeHtml(group.category)}</span>
             </h2>
-            <span class="section-count">${filteredLinks.length}</span>
+            <span class="section-meta">
+              <span class="edit-tools">
+                <button class="tool-btn primary" type="button" data-action="add-bookmark">新增书签</button>
+                <button class="tool-btn icon" type="button" data-action="edit-category" aria-label="编辑分组">✎</button>
+                <button class="tool-btn icon danger" type="button" data-action="delete-category" aria-label="删除分组">×</button>
+              </span>
+              <span class="section-count">${filteredLinks.length}</span>
+            </span>
           </div>
           <div class="grid"></div>
         `;
+        section.querySelector(".section-head").addEventListener("click", async (event) => {
+          const action = event.target.dataset.action;
+          if (!action) return;
+          if (action === "add-bookmark") {
+            openBookmarkForm(group.id);
+            return;
+          }
+          if (action === "edit-category") {
+            openCategoryForm(group);
+            return;
+          }
+          if (action === "delete-category") {
+            await deleteCategory(group.id);
+          }
+        });
 
         const grid = section.querySelector(".grid");
         grid.dataset.categoryId = group.id;
@@ -1484,12 +1685,14 @@
           }
         });
         filteredLinks.forEach((link) => {
-          const card = document.createElement("a");
+          const card = document.createElement(authState.editMode ? "div" : "a");
           const domain = getDomain(link.url);
           card.className = "card";
-          card.href = link.url;
-          card.target = "_blank";
-          card.rel = "noopener noreferrer";
+          if (!authState.editMode) {
+            card.href = link.url;
+            card.target = "_blank";
+            card.rel = "noopener noreferrer";
+          }
           card.draggable = authState.editMode;
           card.dataset.bookmarkId = link.id;
           card.dataset.categoryId = group.id;
@@ -1498,13 +1701,24 @@
           card.innerHTML = `
             ${renderFavicon(link.title, domain)}
             <span class="card-copy">
-              <span class="card-title">${link.title}</span>
-              <span class="card-url">${domain}</span>
+              <span class="card-title">${escapeHtml(link.title)}</span>
+              <span class="card-url">${escapeHtml(domain)}</span>
+            </span>
+            <span class="card-actions">
+              <button class="tool-btn icon" type="button" data-action="edit-bookmark" aria-label="编辑书签">✎</button>
+              <button class="tool-btn icon danger" type="button" data-action="delete-bookmark" aria-label="删除书签">×</button>
             </span>
           `;
           card.addEventListener("click", (event) => {
-            if (authState.editMode) {
+            if (authState.editMode || event.target.dataset.action) {
               event.preventDefault();
+            }
+            const action = event.target.dataset.action;
+            if (action === "edit-bookmark") {
+              openBookmarkForm(group.id, link);
+            }
+            if (action === "delete-bookmark") {
+              deleteBookmark(link.id);
             }
           });
           card.addEventListener("dragstart", (event) => {
@@ -1579,6 +1793,120 @@
         if (index > -1) return { category, index, bookmark: category.links[index] };
       }
       return null;
+    }
+
+    function categoryOptions(selectedId = "") {
+      return siteData.map((category) => `
+        <option value="${category.id}" ${String(category.id) === String(selectedId) ? "selected" : ""}>${escapeHtml(category.category)}</option>
+      `).join("");
+    }
+
+    function iconOptions(selectedIcon = "book") {
+      return Object.keys(icons).map((icon) => `
+        <option value="${icon}" ${icon === selectedIcon ? "selected" : ""}>${escapeHtml(icon)}</option>
+      `).join("");
+    }
+
+    function openModal(title, html) {
+      modalTitle.textContent = title;
+      modalForm.innerHTML = html;
+      editModal.classList.add("active");
+      editModal.setAttribute("aria-hidden", "false");
+      const firstInput = modalForm.querySelector("input, select");
+      if (firstInput) firstInput.focus();
+    }
+
+    function closeModal() {
+      editModal.classList.remove("active");
+      editModal.setAttribute("aria-hidden", "true");
+      modalState.type = "";
+      modalState.id = "";
+      modalState.categoryId = "";
+      modalForm.innerHTML = "";
+    }
+
+    function openCategoryForm(category = null) {
+      modalState.type = "category";
+      modalState.id = category ? String(category.id) : "";
+      openModal(category ? "编辑分组" : "新增分组", `
+        <label class="field span-6">
+          <span>名称</span>
+          <input name="name" required value="${escapeHtml(category?.category || "")}" placeholder="工作">
+        </label>
+        <label class="field span-6">
+          <span>图标</span>
+          <select name="icon">${iconOptions(category?.icon || "book")}</select>
+        </label>
+        <div class="modal-actions">
+          <button class="tool-btn" type="button" data-action="cancel">取消</button>
+          <button class="tool-btn primary" type="submit">保存</button>
+        </div>
+      `);
+    }
+
+    function openBookmarkForm(categoryId, bookmark = null) {
+      modalState.type = "bookmark";
+      modalState.id = bookmark ? String(bookmark.id) : "";
+      modalState.categoryId = String(categoryId || bookmark?.category_id || "");
+      openModal(bookmark ? "编辑书签" : "新增书签", `
+        <label class="field span-6">
+          <span>标题</span>
+          <input name="title" required value="${escapeHtml(bookmark?.title || "")}" placeholder="chatgpt">
+        </label>
+        <label class="field span-6">
+          <span>分组</span>
+          <select name="category_id">${categoryOptions(bookmark?.category_id || categoryId)}</select>
+        </label>
+        <label class="field span-12">
+          <span>网址</span>
+          <input name="url" required value="${escapeHtml(bookmark?.url || "")}" placeholder="https://example.com/">
+        </label>
+        <div class="modal-actions">
+          <button class="tool-btn" type="button" data-action="cancel">取消</button>
+          <button class="tool-btn primary" type="submit">保存</button>
+        </div>
+      `);
+    }
+
+    async function saveCategory(formData) {
+      const body = {
+        name: formData.get("name"),
+        icon: formData.get("icon"),
+      };
+      await api(modalState.id ? `categories/${modalState.id}` : "categories", {
+        method: modalState.id ? "PUT" : "POST",
+        body: JSON.stringify(body),
+      });
+      closeModal();
+      await loadSiteData();
+    }
+
+    async function saveBookmark(formData) {
+      const body = {
+        category_id: Number(formData.get("category_id")),
+        title: formData.get("title"),
+        url: formData.get("url"),
+      };
+      await api(modalState.id ? `bookmarks/${modalState.id}` : "bookmarks", {
+        method: modalState.id ? "PUT" : "POST",
+        body: JSON.stringify(body),
+      });
+      closeModal();
+      await loadSiteData();
+    }
+
+    async function deleteCategory(categoryId) {
+      const category = findCategory(categoryId);
+      if (!category || !confirm(`删除分组「${category.category}」及其中书签？`)) return;
+      await api(`categories/${categoryId}`, { method: "DELETE" });
+      await loadSiteData();
+    }
+
+    async function deleteBookmark(bookmarkId) {
+      const found = findBookmark(bookmarkId);
+      if (!found || !confirm(`删除书签「${found.bookmark.title}」？`)) return;
+      await api(`bookmarks/${bookmarkId}`, { method: "DELETE" });
+      await loadSiteData();
     }
 
     async function persistBookmarkOrder(sourceCategoryId, targetCategoryId) {
@@ -1730,6 +2058,32 @@
       authState.editMode = !authState.editMode;
       updateAuthUi();
       render("");
+    });
+    addCategoryBtn.addEventListener("click", () => openCategoryForm());
+    modalClose.addEventListener("click", closeModal);
+    editModal.addEventListener("click", (event) => {
+      if (event.target === editModal) {
+        closeModal();
+      }
+    });
+    modalForm.addEventListener("click", (event) => {
+      if (event.target.dataset.action === "cancel") {
+        closeModal();
+      }
+    });
+    modalForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const formData = new FormData(modalForm);
+      try {
+        if (modalState.type === "category") {
+          await saveCategory(formData);
+        }
+        if (modalState.type === "bookmark") {
+          await saveBookmark(formData);
+        }
+      } catch (error) {
+        alert(error.message || "保存失败");
+      }
     });
     logoutBtn.addEventListener("click", async () => {
       await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" });
