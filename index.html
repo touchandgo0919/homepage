@@ -202,6 +202,26 @@
       transform: translateY(-1px);
     }
 
+    .admin-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 38px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--muted);
+      padding: 0 12px;
+      font-weight: 760;
+      transition: border-color 160ms ease, color 160ms ease, transform 160ms ease;
+    }
+
+    .admin-link:hover {
+      border-color: color-mix(in srgb, var(--accent) 54%, var(--border));
+      color: var(--accent);
+      transform: translateY(-1px);
+    }
+
     .theme-toggle svg {
       width: 17px;
       height: 17px;
@@ -608,6 +628,7 @@
       </label>
 
       <div class="actions">
+        <a class="admin-link" href="/admin/" aria-label="进入管理后台">管理</a>
         <button class="theme-toggle" id="themeToggle" type="button" aria-label="切换深色浅色模式">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="4"></circle>
@@ -1061,9 +1082,16 @@
       document.getElementById("bookmarkCount").textContent = totalLinks;
     }
 
+    function currentTenantSlug() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get("tenant") || "zhaotao";
+    }
+
     async function loadSiteData() {
       try {
-        const response = await fetch("/api/nav", { headers: { accept: "application/json" } });
+        const response = await fetch(`/api/nav?tenant=${encodeURIComponent(currentTenantSlug())}`, {
+          headers: { accept: "application/json" },
+        });
         if (!response.ok) {
           throw new Error("API unavailable");
         }

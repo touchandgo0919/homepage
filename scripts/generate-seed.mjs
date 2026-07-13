@@ -1,7 +1,7 @@
 import fs from "node:fs";
 
 const html = fs.readFileSync("index.html", "utf8");
-const match = html.match(/const siteData = ([\s\S]*?);\n\n    const icons =/);
+const match = html.match(/const fallbackSiteData = ([\s\S]*?);\n\n    const icons =/);
 
 if (!match) {
   throw new Error("Unable to find siteData in index.html");

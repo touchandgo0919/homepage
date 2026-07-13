@@ -67,6 +67,15 @@
       padding: 18px 22px 28px;
     }
 
+    .tenant-admin {
+      display: none;
+      max-width: 1420px;
+      margin: 18px auto 0;
+      padding: 0 22px;
+    }
+
+    .tenant-admin.active { display: block; }
+
     .panel {
       border: 1px solid var(--border);
       border-radius: var(--radius);
@@ -157,12 +166,31 @@
       <a href="/">返回首页</a>
     </div>
     <div class="toolbar">
-      <input id="tokenInput" class="btn" type="password" placeholder="ADMIN_TOKEN">
-      <button id="saveTokenBtn" class="btn" type="button">保存令牌</button>
+      <input id="tenantInput" class="btn" type="text" placeholder="租户" value="zhaotao">
+      <input id="tokenInput" class="btn" type="password" placeholder="租户令牌 / ADMIN_TOKEN">
+      <button id="loginBtn" class="btn primary" type="button">登录</button>
       <button id="refreshBtn" class="btn primary" type="button">刷新</button>
       <span id="status" class="status">等待加载</span>
     </div>
   </header>
+
+  <section id="tenantAdmin" class="tenant-admin">
+    <div class="panel">
+      <div class="panel-head">
+        <h2>租户</h2>
+        <span id="tenantCount" class="count">平台管理员</span>
+      </div>
+      <form id="tenantForm" class="form">
+        <input type="hidden" name="id">
+        <label class="field span-3"><span>标识</span><input name="slug" required placeholder="team-a"></label>
+        <label class="field span-3"><span>名称</span><input name="name" required placeholder="Team A"></label>
+        <label class="field span-4"><span>租户令牌</span><input name="admin_token" placeholder="留空则编辑时不修改"></label>
+        <button class="btn primary span-2" type="submit">保存租户</button>
+        <button id="resetTenantBtn" class="btn ghost span-12" type="button">新建租户</button>
+      </form>
+      <div id="tenantList" class="list"></div>
+    </div>
+  </section>
 
   <main class="layout">
     <section class="panel">
@@ -211,12 +239,15 @@
   </main>
 
   <script>
-    const state = { data: [], selectedCategoryId: null, dragging: null };
+    const state = { data: [], tenants: [], selectedCategoryId: null, dragging: null, role: "", tenant: null };
+    const tenantInput = document.getElementById("tenantInput");
     const tokenInput = document.getElementById("tokenInput");
     const statusEl = document.getElementById("status");
+    const tenantForm = document.getElementById("tenantForm");
     const categoryForm = document.getElementById("categoryForm");
     const bookmarkForm = document.getElementById("bookmarkForm");
 
+    tenantInput.value = localStorage.getItem("nav-admin-tenant") || "zhaotao";
     tokenInput.value = localStorage.getItem("nav-admin-token") || "";
 
     function setStatus(text, kind = "") {
@@ -226,6 +257,10 @@
 
     function token() {
       return tokenInput.value.trim();
+    }
+
+    function tenantSlug() {
+      return tenantInput.value.trim() || "zhaotao";
     }
 
     function escapeHtml(value) {
@@ -243,6 +278,7 @@
         headers: {
           "content-type": "application/json",
           ...(token() ? { authorization: `Bearer ${token()}` } : {}),
+          "x-tenant-slug": tenantSlug(),
           ...(options.headers || {}),
         },
       });
@@ -255,13 +291,38 @@
 
     async function load() {
       setStatus("加载中");
-      const body = await api("nav");
+      const body = await api(`nav?tenant=${encodeURIComponent(tenantSlug())}`);
+      state.tenant = body.tenant || null;
       state.data = body.data || [];
       if (!state.selectedCategoryId && state.data[0]) {
         state.selectedCategoryId = state.data[0].id;
       }
+      if (state.role === "platform") {
+        await loadTenants();
+      }
       render();
       setStatus("已同步", "ok");
+    }
+
+    async function login() {
+      setStatus("登录中");
+      const body = await api("auth/tenant", {
+        method: "POST",
+        body: JSON.stringify({ slug: tenantSlug(), token: token() }),
+        headers: {},
+      });
+      state.role = body.role;
+      state.tenant = body.tenant;
+      localStorage.setItem("nav-admin-tenant", tenantSlug());
+      localStorage.setItem("nav-admin-token", token());
+      state.selectedCategoryId = null;
+      await load();
+      setStatus(body.role === "platform" ? "平台管理员已登录" : "租户已登录", "ok");
+    }
+
+    async function loadTenants() {
+      const body = await api("tenants");
+      state.tenants = body.data || [];
     }
 
     function selectedCategory() {
@@ -283,9 +344,64 @@
     }
 
     function render() {
+      renderTenantAdmin();
       renderCategoryList();
       renderBookmarkFormOptions();
       renderBookmarkList();
+    }
+
+    function resetTenantForm() {
+      tenantForm.reset();
+      tenantForm.elements.id.value = "";
+    }
+
+    function renderTenantAdmin() {
+      const panel = document.getElementById("tenantAdmin");
+      panel.classList.toggle("active", state.role === "platform");
+      if (state.role !== "platform") return;
+
+      document.getElementById("tenantCount").textContent = `${state.tenants.length} 个租户`;
+      const root = document.getElementById("tenantList");
+      root.innerHTML = "";
+      state.tenants.forEach((tenant) => {
+        const row = document.createElement("div");
+        row.className = `row ${tenant.slug === tenantSlug() ? "active" : ""}`;
+        row.dataset.id = tenant.id;
+        row.innerHTML = `
+          <span class="handle">#</span>
+          <span>
+            <span class="title">${escapeHtml(tenant.name)}</span>
+            <span class="sub">${escapeHtml(tenant.slug)}</span>
+          </span>
+          <span class="row-actions">
+            <button class="btn icon" type="button" data-action="open">→</button>
+            <button class="btn icon" type="button" data-action="edit">✎</button>
+            <button class="btn icon danger" type="button" data-action="delete">×</button>
+          </span>
+        `;
+        row.addEventListener("click", async (event) => {
+          const action = event.target.dataset.action;
+          if (action === "edit") {
+            tenantForm.elements.id.value = tenant.id;
+            tenantForm.elements.slug.value = tenant.slug;
+            tenantForm.elements.name.value = tenant.name;
+            tenantForm.elements.admin_token.value = "";
+            return;
+          }
+          if (action === "delete") {
+            await api(`tenants/${tenant.id}`, { method: "DELETE" });
+            await load();
+            return;
+          }
+          if (action === "open") {
+            tenantInput.value = tenant.slug;
+            localStorage.setItem("nav-admin-tenant", tenant.slug);
+            state.selectedCategoryId = null;
+            await load();
+          }
+        });
+        root.appendChild(row);
+      });
     }
 
     function renderCategoryList() {
@@ -448,6 +564,23 @@
       await load();
     });
 
+    tenantForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const body = {
+        slug: tenantForm.elements.slug.value,
+        name: tenantForm.elements.name.value,
+        admin_token: tenantForm.elements.admin_token.value,
+      };
+      const id = tenantForm.elements.id.value;
+      if (!id && !body.admin_token.trim()) {
+        setStatus("新租户必须填写租户令牌", "bad");
+        return;
+      }
+      await api(id ? `tenants/${id}` : "tenants", { method: id ? "PUT" : "POST", body: JSON.stringify(body) });
+      resetTenantForm();
+      await load();
+    });
+
     async function deleteCategory(id) {
       await api(`categories/${id}`, { method: "DELETE" });
       state.selectedCategoryId = null;
@@ -459,15 +592,17 @@
       await load();
     }
 
-    document.getElementById("saveTokenBtn").addEventListener("click", () => {
-      localStorage.setItem("nav-admin-token", token());
-      setStatus("令牌已保存", "ok");
-    });
+    document.getElementById("loginBtn").addEventListener("click", () => login().catch((error) => setStatus(error.message, "bad")));
     document.getElementById("refreshBtn").addEventListener("click", () => load().catch((error) => setStatus(error.message, "bad")));
+    document.getElementById("resetTenantBtn").addEventListener("click", resetTenantForm);
     document.getElementById("resetCategoryBtn").addEventListener("click", resetCategoryForm);
     document.getElementById("resetBookmarkBtn").addEventListener("click", resetBookmarkForm);
 
-    load().catch((error) => setStatus(error.message, "bad"));
+    if (token()) {
+      login().catch((error) => setStatus(error.message, "bad"));
+    } else {
+      setStatus("请输入租户和令牌");
+    }
   </script>
 </body>
 </html>
