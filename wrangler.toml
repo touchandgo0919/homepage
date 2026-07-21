@@ -3,7 +3,7 @@ main = "src/index.js"
 compatibility_date = "2026-07-12"
 
 [vars]
-HOME_API_BASE_URL = ""
+HOME_API_BASE_URL = "https://home-backend.zhaotao0919.workers.dev"
 
 [assets]
 directory = "./dist"
