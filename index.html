@@ -954,6 +954,14 @@
       color: var(--muted);
     }
 
+    .login-status {
+      min-height: 20px;
+      margin: 12px 0 0;
+      color: #ffb4a8;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
     .guest-panel .login-form {
       justify-content: center;
     }
@@ -1150,6 +1158,7 @@
         <input id="guestLoginToken" type="password" autocomplete="current-password" placeholder="Token">
         <button type="submit">登录</button>
       </form>
+      <div class="login-status" id="guestLoginStatus" role="status"></div>
     </div>
   </div>
 
@@ -1407,6 +1416,7 @@
     const adminLink = document.getElementById("adminLink");
     const logoutBtn = document.getElementById("logoutBtn");
     const addCategoryBtn = document.getElementById("addCategoryBtn");
+    const guestLoginStatus = document.getElementById("guestLoginStatus");
     const editModal = document.getElementById("editModal");
     const modalTitle = document.getElementById("modalTitle");
     const modalForm = document.getElementById("modalForm");
@@ -1472,6 +1482,10 @@
 
     const apiBaseUrl = String(window.HOME_CONFIG?.API_BASE_URL || "").replace(/\/+$/, "");
     const apiUrl = (path) => `${apiBaseUrl}/api/${String(path).replace(/^\/+/, "")}`;
+
+    function setLoginStatus(message = "") {
+      guestLoginStatus.textContent = message;
+    }
 
     async function api(path, options = {}) {
       const token = visibleToken();
@@ -2114,29 +2128,46 @@
     searchInput.addEventListener("input", (event) => render(event.target.value));
     async function loginWithToken(token) {
       if (!token) {
-        return;
+        throw new Error("请输入 token");
       }
-      const response = await fetch(apiUrl("auth/token"), {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ token }),
-      });
-      if (response.ok) {
-        localStorage.setItem("nav-visible-token", token);
-        document.getElementById("loginToken").value = "";
-        document.getElementById("guestLoginToken").value = "";
-        await loadSiteData();
-        return;
+      if (!apiBaseUrl) {
+        throw new Error("后端 API 未配置，请设置 HOME_API_BASE_URL 后重新部署前端。");
       }
-      throw new Error("登录失败");
+      if (apiBaseUrl.includes("<your-account>")) {
+        throw new Error("后端 API 地址仍是占位值，请配置 HOME_API_BASE_URL 后重新部署前端。");
+      }
+
+      let response;
+      try {
+        response = await fetch(apiUrl("auth/token"), {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ token }),
+        });
+      } catch {
+        throw new Error(apiBaseUrl ? "无法连接后端 API，请检查 Worker 地址和 CORS 配置。" : "后端 API 未配置，请设置 HOME_API_BASE_URL 后重新部署前端。");
+      }
+
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(body.error || "登录失败，请检查 token。");
+      }
+
+      localStorage.setItem("nav-visible-token", token);
+      document.getElementById("loginToken").value = "";
+      document.getElementById("guestLoginToken").value = "";
+      setLoginStatus("");
+      await loadSiteData();
     }
 
     document.getElementById("loginForm").addEventListener("submit", async (event) => {
       event.preventDefault();
       const token = document.getElementById("loginToken").value.trim();
       try {
+        setLoginStatus("");
         await loginWithToken(token);
-      } catch {
+      } catch (error) {
+        setLoginStatus(error.message || "登录失败");
         document.getElementById("loginToken").select();
       }
     });
@@ -2144,8 +2175,10 @@
       event.preventDefault();
       const token = document.getElementById("guestLoginToken").value.trim();
       try {
+        setLoginStatus("");
         await loginWithToken(token);
-      } catch {
+      } catch (error) {
+        setLoginStatus(error.message || "登录失败");
         document.getElementById("guestLoginToken").select();
       }
     });

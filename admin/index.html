@@ -387,6 +387,12 @@
     const apiUrl = (path) => `${apiBaseUrl}/api/${String(path).replace(/^\/+/, "")}`;
 
     async function api(path, options = {}) {
+      if (!apiBaseUrl) {
+        throw new Error("后端 API 未配置，请设置 HOME_API_BASE_URL 后重新部署前端。");
+      }
+      if (apiBaseUrl.includes("<your-account>")) {
+        throw new Error("后端 API 地址仍是占位值，请配置 HOME_API_BASE_URL 后重新部署前端。");
+      }
       const response = await fetch(apiUrl(path), {
         ...options,
         headers: {
